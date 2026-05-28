@@ -1,71 +1,74 @@
-# 🏰 Sunfire Castle Rally Planner
+# 🏰 WOS Alliance Manager
 
-Alliance leader tool for Sunfire Castle battle planning. Built for State 3543.
+Player database and event management tool for Whiteout Survival alliances. Built for State 3543.
 
-## Deploy to Vercel (5 minutes)
+## What's included
 
-### Option A — GitHub + Vercel (recommended, auto-deploys on update)
+- **Player database** — WOS FID lookup, full profile fields, battle stats
+- **WOS profile lookup** — unofficial, optional, all data manually editable
+- **Export / Import** — full JSON export with version tracking
+- **Seed data** — paste an export into `/src/data/defaultData.json` to hardcode your roster
+- **PWA** — installable on iPhone and Android, works offline
 
-1. Create a free account at [github.com](https://github.com)
-2. Create a new repository called `rally-planner` (set to Private if you prefer)
-3. Upload this entire folder to the repository
-4. Create a free account at [vercel.com](https://vercel.com)
-5. Click **Add New Project** → Import your GitHub repo
-6. Vercel auto-detects Vite. Click **Deploy**
-7. Done — you'll get a URL like `rally-planner.vercel.app`
+## Data architecture
 
-To update the app later: edit files in GitHub → Vercel redeploys automatically.
+```
+/src/data/defaultData.json   ← hardcoded seed data (commit this with your roster)
+localStorage                 ← live app state, auto-saved on every change
+Export JSON                  ← download snapshot, paste into defaultData.json to persist
+```
 
-### Option B — Vercel CLI (fastest)
+### Version migration
+
+All exports include a `_version` field. The `dataManager.js` `migrateIfNeeded()` function
+handles schema upgrades — add cases there as the data model evolves.
+
+### Export schema
+
+```json
+{
+  "_version": "1.0.0",
+  "_exported": "2024-01-15T10:30:00.000Z",
+  "settings": { "allianceName": "", "allianceTag": "", "stateId": "3543" },
+  "players": [...],
+  "events": [],
+  "schedules": [],
+  "svs": { "seasons": [] },
+  "notes": [],
+  "lastUpdated": "2024-01-15T10:30:00.000Z"
+}
+```
+
+## Deploy to Vercel
 
 ```bash
+# Option A — drag and drop
+npm install && npm run build
+# Drag dist/ to vercel.com/new
+
+# Option B — CLI
 npm install -g vercel
-cd rally-planner
-npm install
 vercel
+
+# Option C — GitHub auto-deploy
+# Push to GitHub, import repo in Vercel dashboard
 ```
 
-Follow the prompts. Live in under 2 minutes.
-
-### Option C — Drag and drop (no account needed temporarily)
-
-```bash
-npm install
-npm run build
-```
-
-Drag the `dist/` folder to [vercel.com/new](https://vercel.com/new).
-
----
-
-## Custom domain (optional)
-
-1. In Vercel dashboard → your project → **Settings → Domains**
-2. Add your domain e.g. `rally.state3543.com`
-3. Point your DNS CNAME to `cname.vercel-dns.com`
-4. HTTPS is automatic
-
----
+**Root Directory:** leave blank (files are at repo root)
 
 ## Local development
 
 ```bash
 npm install
 npm run dev
+# → http://localhost:5173
 ```
 
-Opens at `http://localhost:5173`
-
----
-
-## Install as app on iPhone
+## Install as iPhone app
 
 1. Open your Vercel URL in Safari
-2. Tap the Share button
-3. Tap **Add to Home Screen**
-4. Name it "Rally Planner" → Add
-
-It will sit on your home screen like a native app and work offline.
+2. Share → Add to Home Screen
+3. Done — works offline, no app store needed
 
 ---
 
