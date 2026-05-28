@@ -158,7 +158,7 @@
       "username": "JAX",
       "alias": "",
       "allianceTag": "INT",
-      "country": "",
+      "country": "United States",
       "timezone": "",
       "languages": [
         "English",
@@ -188,14 +188,14 @@
       ],
       "availability": {
         "present": "available",
-        "timing": "unknown",
+        "timing": "on-time",
         "lateBy": null,
         "earlyBy": null,
-        "discord": "unknown"
+        "discord": "yes"
       },
       "teamAssignment": null,
       "notes": "",
-      "profileLastUpdated": "2026-05-28T15:08:53.716Z",
+      "profileLastUpdated": "2026-05-28T15:18:03.704Z",
       "createdAt": 1779980830267
     },
     {
@@ -245,6 +245,80 @@
       "notes": "",
       "profileLastUpdated": "2026-05-28T15:13:09.563Z",
       "createdAt": 1779981001600
+    },
+    {
+      "id": "rpkyo9krr5rmppn1l7o",
+      "fid": "",
+      "username": "Wraith",
+      "alias": "",
+      "allianceTag": "SOV",
+      "country": "United Kingdom",
+      "timezone": "",
+      "languages": [
+        "English"
+      ],
+      "furnaceLevel": 5,
+      "infantryCampLevel": null,
+      "lancerCampLevel": null,
+      "marksmanCampLevel": null,
+      "troops": {
+        "infantry": "FC5",
+        "lancer": "FC5",
+        "marksman": "FC5"
+      },
+      "heroes": [],
+      "hasNoneChecked": false,
+      "roles": [
+        "Rally Lead"
+      ],
+      "availability": {
+        "present": "available",
+        "timing": "unknown",
+        "lateBy": null,
+        "earlyBy": null,
+        "discord": "yes"
+      },
+      "teamAssignment": null,
+      "notes": "",
+      "profileLastUpdated": "2026-05-28T15:20:16.397Z",
+      "createdAt": 1779981528228
+    },
+    {
+      "id": "fwoc7jn68qmppn3skc",
+      "fid": "",
+      "username": "Buu",
+      "alias": "",
+      "allianceTag": "SOV",
+      "country": "United States",
+      "timezone": "",
+      "languages": [
+        "English"
+      ],
+      "furnaceLevel": 5,
+      "infantryCampLevel": null,
+      "lancerCampLevel": null,
+      "marksmanCampLevel": null,
+      "troops": {
+        "infantry": "FC5",
+        "lancer": "FC5",
+        "marksman": "FC5"
+      },
+      "heroes": [],
+      "hasNoneChecked": false,
+      "roles": [
+        "Rally Lead"
+      ],
+      "availability": {
+        "present": "available",
+        "timing": "unknown",
+        "lateBy": null,
+        "earlyBy": null,
+        "discord": "unknown"
+      },
+      "teamAssignment": null,
+      "notes": "",
+      "profileLastUpdated": "2026-05-28T15:21:24.090Z",
+      "createdAt": 1779981631068
     }
   ],
   "events": [],
@@ -254,5 +328,5 @@
     "lastUpdated": null
   },
   "notes": [],
-  "lastUpdated": "2026-05-28T15:13:10.001Z"
+  "lastUpdated": "2026-05-28T15:21:35.659Z"
 }
