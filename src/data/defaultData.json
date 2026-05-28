@@ -151,6 +151,100 @@
       "notes": "",
       "profileLastUpdated": "2026-05-28T14:05:20.917Z",
       "createdAt": 1779976988646
+    },
+    {
+      "id": "l24gwbzqnafmppmmmnv",
+      "fid": "",
+      "username": "JAX",
+      "alias": "",
+      "allianceTag": "INT",
+      "country": "",
+      "timezone": "",
+      "languages": [
+        "English",
+        "Korean"
+      ],
+      "furnaceLevel": 5,
+      "infantryCampLevel": null,
+      "lancerCampLevel": null,
+      "marksmanCampLevel": null,
+      "troops": {
+        "infantry": "FC5",
+        "lancer": "FC5",
+        "marksman": "FC5"
+      },
+      "heroes": [
+        "Seo-Yoon",
+        "Jessie",
+        "Jasser",
+        "Bahiti",
+        "Patrick",
+        "Lumak Bokan",
+        "Ling Xue"
+      ],
+      "hasNoneChecked": false,
+      "roles": [
+        "Rally Lead"
+      ],
+      "availability": {
+        "present": "available",
+        "timing": "unknown",
+        "lateBy": null,
+        "earlyBy": null,
+        "discord": "unknown"
+      },
+      "teamAssignment": null,
+      "notes": "",
+      "profileLastUpdated": "2026-05-28T15:08:53.716Z",
+      "createdAt": 1779980830267
+    },
+    {
+      "id": "4smxomzt2axmppmqav4",
+      "fid": "",
+      "username": "chaz",
+      "alias": "",
+      "allianceTag": "INT",
+      "country": "United Kingdom",
+      "timezone": "UK & Ireland",
+      "languages": [
+        "English"
+      ],
+      "furnaceLevel": 5,
+      "infantryCampLevel": null,
+      "lancerCampLevel": null,
+      "marksmanCampLevel": null,
+      "troops": {
+        "infantry": "FC5",
+        "lancer": "FC5",
+        "marksman": "FC5"
+      },
+      "heroes": [
+        "Jessie",
+        "Jasser",
+        "Seo-Yoon",
+        "Lumak Bokan",
+        "Ling Xue",
+        "Bahiti",
+        "Patrick",
+        "Philly",
+        "Mia",
+        "Lynn"
+      ],
+      "hasNoneChecked": false,
+      "roles": [
+        "Joiner"
+      ],
+      "availability": {
+        "present": "available",
+        "timing": "unknown",
+        "lateBy": null,
+        "earlyBy": null,
+        "discord": "yes"
+      },
+      "teamAssignment": null,
+      "notes": "",
+      "profileLastUpdated": "2026-05-28T15:13:09.563Z",
+      "createdAt": 1779981001600
     }
   ],
   "events": [],
@@ -160,5 +254,5 @@
     "lastUpdated": null
   },
   "notes": [],
-  "lastUpdated": "2026-05-28T14:05:21.553Z"
+  "lastUpdated": "2026-05-28T15:13:10.001Z"
 }
