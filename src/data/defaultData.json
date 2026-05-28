@@ -1,5 +1,5 @@
 {
-  "_version": "2.1.0",
+  "_version": "3.0.0",
   "_exported": null,
   "_note": "Paste an export here to hardcode your roster as seed data.",
   "settings": {
@@ -11,5 +11,6 @@
   "players": [],
   "events": [],
   "prepScores": [],
+  "svsPlans": [],
   "lastUpdated": null
 }
