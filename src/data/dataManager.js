@@ -1,9 +1,9 @@
 import defaultData from './defaultData.json';
+export { JOINER_HEROES, JOINER_META, detectStacking, buildCoverageReport, getMetaSuggestion } from './joinerMeta.js';
 
 const STORAGE_KEY = 'svs_rally_data';
-const CURRENT_VERSION = '3.0.0';
+const CURRENT_VERSION = '3.1.0';
 
-// ── Load / Save ────────────────────────────────────────────────
 export function loadData() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -51,12 +51,11 @@ export function mergeData(current, incoming) {
   });
   const em = new Map((current.events || []).map(e => [e.id, e]));
   (incoming.events || []).forEach(e => em.set(e.id, em.has(e.id) ? { ...em.get(e.id), ...e } : e));
-  const pm2 = new Map((current.svsPlans || []).map(p => [p.id, p]));
-  (incoming.svsPlans || []).forEach(p => pm2.set(p.id, p));
-  return { ...current, ...incoming, players: [...pm.values()], events: [...em.values()], svsPlans: [...pm2.values()], lastUpdated: new Date().toISOString() };
+  const sm = new Map((current.svsPlans || []).map(p => [p.id, p]));
+  (incoming.svsPlans || []).forEach(p => sm.set(p.id, p));
+  return { ...current, ...incoming, players: [...pm.values()], events: [...em.values()], svsPlans: [...sm.values()], lastUpdated: new Date().toISOString() };
 }
 
-// ── Name helpers ───────────────────────────────────────────────
 export function normalizeName(n) {
   return (n || '').toLowerCase().trim().replace(/\s+/g, ' ').replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '');
 }
@@ -100,6 +99,15 @@ export function mergePlayerObjects(existing, incoming) {
       const hm = new Map((existing.eventHistory || []).map(s => [s.snapshotId, s]));
       (incoming.eventHistory || []).forEach(s => { if (!hm.has(s.snapshotId)) hm.set(s.snapshotId, s); });
       merged.eventHistory = [...hm.values()];
+    } else if (k === 'joinerHeroes') {
+      // Merge by hero name — never lose existing verified data
+      const jm = new Map((existing.joinerHeroes || []).map(jh => [jh.hero, jh]));
+      (incoming.joinerHeroes || []).forEach(jh => {
+        const ex = jm.get(jh.hero);
+        // Incoming overwrites only if same or higher skill level, or if not existing
+        if (!ex || jh.skillLevel >= ex.skillLevel) jm.set(jh.hero, jh);
+      });
+      merged.joinerHeroes = [...jm.values()];
     } else if (v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0)) {
       merged[k] = v;
     }
@@ -108,7 +116,6 @@ export function mergePlayerObjects(existing, incoming) {
   return merged;
 }
 
-// ── Event types ────────────────────────────────────────────────
 export const EVENT_TYPES = ['SvS', 'Foundry', 'Canyon Clash', 'Bear Trap', 'Sunfire Castle', 'Transfer Season', 'Custom'];
 
 export function newEvent(o = {}) {
@@ -117,218 +124,107 @@ export function newEvent(o = {}) {
 export function newSnapshot(playerId, profile, eventId) {
   return {
     snapshotId: uid(), eventId, playerId, createdAt: new Date().toISOString(),
-    profileSnapshot: { username: profile.username || '', alias: profile.alias || '', allianceTag: profile.allianceTag || '', furnaceLevel: profile.furnaceLevel || null, troops: { ...(profile.troops || {}) }, roles: [...(profile.roles || [])], heroes: [...(profile.heroes || [])] },
-    attendance: { registered: false, attended: null, late: false, leftEarly: false, noShow: false, stayedFull: false, prepPhase: false, battlePhase: false },
-    voice: { joined: null, onTime: false, leftEarly: false, joinedLate: false, qualityNote: '' },
-    combat: { joinedRallies: false, ledRallies: false, defendedStructures: false, followedOrders: null, wentRogue: false },
+    profileSnapshot: { username: profile.username || '', alias: profile.alias || '', allianceTag: profile.allianceTag || '', furnaceLevel: profile.furnaceLevel || null, troops: { ...(profile.troops || {}) }, roles: [...(profile.roles || [])], joinerHeroes: [...(profile.joinerHeroes || [])] },
+    attendance: { registered:false, attended:null, late:false, leftEarly:false, noShow:false, stayedFull:false, prepPhase:false, battlePhase:false },
+    voice: { joined:null, onTime:false, leftEarly:false, joinedLate:false, qualityNote:'' },
+    combat: { joinedRallies:false, ledRallies:false, defendedStructures:false, followedOrders:null, wentRogue:false },
     notes: '', performanceTag: null,
   };
 }
 
-// ── SvS Plan ───────────────────────────────────────────────────
 export const STRATEGY_TYPES = ['Solo Rush', 'Double Rally', 'Multi Rally', 'Counter Rally', 'Castle Switching', 'Decoy Garrison Lead', 'Defensive Hold', 'Reinforcement Wall', 'Hybrid', 'Custom'];
-
 export const TEAM_ROLES = ['Solo Attack', 'Counter Rally', 'Reinforcement', 'Castle Fill', 'Exit Team', 'Backup', 'Voice Required', 'Garrison Lead', 'Decoy Lead'];
 
 export function newSvsPlan(o = {}) {
-  return {
-    id: uid(),
-    name: '',
-    strategy: 'Counter Rally',
-    allianceTag: '',
-    date: new Date().toISOString().slice(0, 10),
-    status: 'draft', // draft | active | completed
-    notes: '',
-    postBattleNotes: '',
-    // Timing
-    targetImpactTime: '', // HH:MM:SS
-    // Sub-plans
-    rallies: [],         // Rally objects
-    reinforcements: [],  // Reinforcement objects
-    assignments: [],     // Assignment objects
-    timelineEvents: [],  // Manual timeline events
-    marchDb: [],         // Player march times
-    // Template flag
-    isTemplate: false,
-    templateName: '',
-    createdAt: new Date().toISOString(),
-    ...o,
-  };
+  return { id:uid(), name:'', strategy:'Counter Rally', allianceTag:'', date:new Date().toISOString().slice(0,10), status:'draft', notes:'', postBattleNotes:'', targetImpactTime:'', rallies:[], reinforcements:[], assignments:[], timelineEvents:[], marchDb:[], isTemplate:false, templateName:'', createdAt:new Date().toISOString(), ...o };
 }
-
 export function newRally(o = {}) {
-  return {
-    id: uid(),
-    label: '',
-    leadPlayerId: null,
-    leadName: '',
-    allianceTag: '',
-    launchTime: '',       // HH:MM:SS
-    marchDuration: 0,     // seconds
-    impactTime: '',       // calculated
-    isStrong: true,
-    isCounter: false,
-    isDecoy: false,
-    order: 1,
-    notes: '',
-    status: 'planned',   // planned | launched | impacted | failed
-    ...o,
-  };
+  return { id:uid(), label:'', leadPlayerId:null, leadName:'', allianceTag:'', launchTime:'', marchDuration:0, impactTime:'', isStrong:true, isCounter:false, isDecoy:false, order:1, notes:'', status:'planned', ...o };
 }
-
 export function newReinforcement(o = {}) {
-  return {
-    id: uid(),
-    playerId: null,
-    playerName: '',
-    allianceTag: '',
-    targetArrivalTime: '', // HH:MM:SS
-    marchDuration: 0,      // seconds
-    sendTime: '',          // calculated
-    arrivalWindow: 5,      // ±seconds
-    status: 'pending',     // pending | sent | arrived | failed
-    notes: '',
-    ...o,
-  };
+  return { id:uid(), playerId:null, playerName:'', allianceTag:'', targetArrivalTime:'', marchDuration:0, sendTime:'', arrivalWindow:5, status:'pending', notes:'', ...o };
 }
-
 export function newAssignment(o = {}) {
-  return {
-    id: uid(),
-    playerId: null,
-    playerName: '',
-    allianceTag: '',
-    teamRole: '',
-    marchTime: null,
-    confirmed: false,
-    notes: '',
-    ...o,
-  };
+  return { id:uid(), playerId:null, playerName:'', allianceTag:'', teamRole:'', marchTime:null, confirmed:false, notes:'', ...o };
 }
-
 export function newMarchEntry(o = {}) {
-  return {
-    id: uid(),
-    playerId: null,
-    playerName: '',
-    castleMarch: null,    // seconds
-    turretMarch: null,
-    centerMarch: null,
-    usesSpeedup: false,
-    teleportRow: null,
-    notes: '',
-    ...o,
-  };
+  return { id:uid(), playerId:null, playerName:'', castleMarch:null, turretMarch:null, centerMarch:null, usesSpeedup:false, teleportRow:null, notes:'', ...o };
 }
 
-// ── Timing calculations ────────────────────────────────────────
-export function calcSendTime(targetArrivalHMS, marchSeconds) {
-  const secs = parseHMS(targetArrivalHMS) - marchSeconds;
-  return formatHMS(Math.max(0, secs));
-}
-export function calcImpactTime(launchHMS, marchSeconds) {
-  return formatHMS(parseHMS(launchHMS) + marchSeconds);
-}
-export function parseHMS(hms) {
-  if (!hms) return 0;
-  const parts = hms.split(':').map(Number);
-  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-  if (parts.length === 2) return parts[0] * 60 + parts[1];
-  return Number(hms) || 0;
-}
-export function formatHMS(totalSeconds) {
-  if (isNaN(totalSeconds) || totalSeconds < 0) return '00:00:00';
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = Math.floor(totalSeconds % 60);
-  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-}
-export function secsToHuman(s) {
-  if (s < 60) return `${s}s`;
-  if (s < 3600) return `${Math.floor(s/60)}m ${s%60}s`;
-  return `${Math.floor(s/3600)}h ${Math.floor((s%3600)/60)}m`;
-}
+export function calcSendTime(targetHMS, marchSeconds) { return formatHMS(Math.max(0, parseHMS(targetHMS) - marchSeconds)); }
+export function calcImpactTime(launchHMS, marchSeconds) { return formatHMS(parseHMS(launchHMS) + marchSeconds); }
+export function parseHMS(hms) { if (!hms) return 0; const p = hms.split(':').map(Number); if (p.length === 3) return p[0]*3600+p[1]*60+p[2]; if (p.length === 2) return p[0]*60+p[1]; return Number(hms)||0; }
+export function formatHMS(s) { if (isNaN(s)||s<0) return '00:00:00'; const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=Math.floor(s%60); return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
+export function secsToHuman(s) { if (s<60) return `${s}s`; if (s<3600) return `${Math.floor(s/60)}m ${s%60}s`; return `${Math.floor(s/3600)}h ${Math.floor((s%3600)/60)}m`; }
 
-// ── Rally warnings ─────────────────────────────────────────────
 export function getRallyWarnings(rallies) {
-  const warnings = [];
-  if (rallies.length < 2) return warnings;
-  const impacts = rallies.filter(r => r.impactTime).map(r => ({ ...r, secs: parseHMS(r.impactTime) })).sort((a, b) => a.secs - b.secs);
+  const w = [];
+  if (rallies.length < 2) return w;
+  const impacts = rallies.filter(r => r.impactTime).map(r => ({...r, secs:parseHMS(r.impactTime)})).sort((a,b)=>a.secs-b.secs);
   if (impacts.length > 1) {
-    const spread = impacts[impacts.length - 1].secs - impacts[0].secs;
-    if (spread > 10) warnings.push(`Rallies spread ${spread}s apart — may not land together`);
-    if (spread > 30) warnings.push('⚠️ Severe sync issue — rallies >30s apart');
+    const spread = impacts[impacts.length-1].secs - impacts[0].secs;
+    if (spread > 10) w.push(`Rallies spread ${spread}s apart — may not land together`);
+    if (spread > 30) w.push('⚠️ Severe sync issue — rallies >30s apart');
   }
   const strong = impacts.find(r => r.isStrong);
-  if (strong && impacts[0].id !== strong.id) warnings.push('⚠️ Strongest rally not arriving last — enemy may reinforce');
-  return warnings;
+  if (strong && impacts[0]?.id !== strong.id) w.push('⚠️ Strongest rally not arriving last — enemy may reinforce');
+  return w;
 }
-
-// ── Counter rally warnings ─────────────────────────────────────
 export function getCounterWarnings(enemyImpactHMS, counterImpactHMS) {
-  const warnings = [];
-  if (!enemyImpactHMS || !counterImpactHMS) return warnings;
+  const w = [];
+  if (!enemyImpactHMS || !counterImpactHMS) return w;
   const diff = parseHMS(counterImpactHMS) - parseHMS(enemyImpactHMS);
-  if (diff < 0) warnings.push('⚠️ Counter arrives BEFORE enemy impact — will be blocked');
-  if (diff > 0 && diff < 3) warnings.push(`Counter arrives ${diff}s after enemy — very tight`);
-  if (diff > 10) warnings.push(`⚠️ Counter arrives ${diff}s late — enemy may reinforce castle`);
-  return warnings;
+  if (diff < 0) w.push('⚠️ Counter arrives BEFORE enemy impact — will be blocked');
+  if (diff > 0 && diff < 3) w.push(`Counter arrives ${diff}s after enemy — very tight`);
+  if (diff > 10) w.push(`⚠️ Counter arrives ${diff}s late — enemy may reinforce castle`);
+  return w;
 }
 
-// ── Auto-suggest players ───────────────────────────────────────
+// ── Auto-suggest using joinerHeroes ────────────────────────────
 export function autoSuggestPlayers(players, events, requirements = {}) {
-  const { heroes = [], minFurnace = 0, requireDiscord = false, requireAvailable = false, minReliability = 0, roles = [], allianceTags = [] } = requirements;
-
+  const { heroes = [], minFurnace = 0, requireDiscord = false, requireAvailable = true, minReliability = 0, roles = [], allianceTags = [] } = requirements;
   return players.map(player => {
     const metrics = calcMetrics(player, events);
     let score = 0;
     const reasons = [], missing = [];
 
-    // Hero match
+    if (allianceTags.length > 0 && !allianceTags.includes(player.allianceTag)) return null;
+
     if (heroes.length > 0) {
-      const owned = heroes.filter(h => player.heroes?.includes(h));
+      const playerHeroes = (player.joinerHeroes || []).filter(jh => jh.skillLevel >= 5).map(jh => jh.hero);
+      const owned = heroes.filter(h => playerHeroes.includes(h));
       if (owned.length === heroes.length) { score += 30; reasons.push(`Has ${owned.join(', ')} at Skill 5`); }
-      else if (owned.length > 0) { score += 10; reasons.push(`Has ${owned.join(', ')}`); missing.push(`Missing: ${heroes.filter(h => !player.heroes?.includes(h)).join(', ')}`); }
+      else if (owned.length > 0) { score += 10; reasons.push(`Has ${owned.join(', ')}`); missing.push(`Missing: ${heroes.filter(h=>!playerHeroes.includes(h)).join(', ')}`); }
       else missing.push(`Missing heroes: ${heroes.join(', ')}`);
     }
 
-    // Availability
     if (player.availability?.present === 'available') { score += 20; reasons.push('Available'); }
     else if (requireAvailable) missing.push('Not available');
 
-    // Discord
     if (player.availability?.discord === 'yes') { score += 15; reasons.push('On Discord'); }
     else if (requireDiscord) missing.push('Discord not confirmed');
 
-    // Furnace
     if (player.furnaceLevel >= minFurnace && minFurnace > 0) { score += 10; reasons.push(`FC${player.furnaceLevel}`); }
-    else if (minFurnace > 0) missing.push(`FC${minFurnace}+ required (has FC${player.furnaceLevel || '?'})`);
+    else if (minFurnace > 0) missing.push(`FC${minFurnace}+ required`);
 
-    // Roles
     if (roles.length > 0) {
       const hasRole = roles.some(r => player.roles?.includes(r));
-      if (hasRole) { score += 15; reasons.push(`Role: ${player.roles?.filter(r => roles.includes(r)).join(', ')}`); }
-      else missing.push(`Role not set (needs ${roles.join(' or ')})`);
+      if (hasRole) { score += 15; reasons.push(`Role: ${player.roles?.filter(r=>roles.includes(r)).join(', ')}`); }
+      else missing.push(`Role not set`);
     }
 
-    // Alliance filter
-    if (allianceTags.length > 0 && !allianceTags.includes(player.allianceTag)) return null;
-
-    // Reliability
     if (metrics) {
       if (metrics.reliabilityScore >= minReliability) { score += Math.round(metrics.reliabilityScore / 10); reasons.push(`Reliability: ${metrics.reliabilityScore}`); }
-      else missing.push(`Reliability ${metrics.reliabilityScore} < ${minReliability} required`);
+      else missing.push(`Reliability too low`);
       if (metrics.streak >= 3) { score += 5; reasons.push(`${metrics.streak} event streak`); }
     } else {
       missing.push('No event history');
     }
 
-    const matchPct = Math.min(100, Math.round(score));
-    return { player, score: matchPct, reasons, missing };
+    return { player, score: Math.min(100, Math.round(score)), reasons, missing };
   }).filter(Boolean).sort((a, b) => b.score - a.score);
 }
 
-// ── Metrics ────────────────────────────────────────────────────
 export function calcMetrics(player, events) {
   const snaps = (events || []).flatMap(ev => (ev.snapshots || []).filter(s => s.playerId === player.id));
   if (!snaps.length) return null;
@@ -336,27 +232,29 @@ export function calcMetrics(player, events) {
   const noShows  = snaps.filter(s => s.attendance.noShow);
   const voiceOn  = snaps.filter(s => s.voice.joined === true);
   const rogue    = snaps.filter(s => s.combat.wentRogue);
-  const ap = Math.round((attended.length / snaps.length) * 100);
-  const vp = Math.round((voiceOn.length  / snaps.length) * 100);
-  const sorted = [...snaps].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  let streak = 0; for (const s of sorted) { if (s.attendance.attended === true) streak++; else break; }
-  let cm = 0; for (const s of sorted) { if (s.attendance.attended === false || s.attendance.noShow) cm++; else break; }
-  const reliability = Math.round(ap * 0.5 + vp * 0.2 + Math.max(0, 100 - rogue.length * 20) * 0.2 + Math.max(0, 100 - noShows.length * 10) * 0.1);
-  return { totalEvents: snaps.length, attended: attended.length, noShows: noShows.length, late: snaps.filter(s => s.attendance.late).length, voiceCount: voiceOn.length, attendancePct: ap, voicePct: vp, streak, consecutiveMisses: cm, reliabilityScore: reliability, wentRogue: rogue.length };
+  const ap = Math.round((attended.length/snaps.length)*100);
+  const vp = Math.round((voiceOn.length/snaps.length)*100);
+  const sorted = [...snaps].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  let streak=0; for (const s of sorted){if(s.attendance.attended===true)streak++;else break;}
+  let cm=0; for (const s of sorted){if(s.attendance.attended===false||s.attendance.noShow)cm++;else break;}
+  const reliability = Math.round(ap*0.5+vp*0.2+Math.max(0,100-rogue.length*20)*0.2+Math.max(0,100-noShows.length*10)*0.1);
+  return { totalEvents:snaps.length, attended:attended.length, noShows:noShows.length, late:snaps.filter(s=>s.attendance.late).length, voiceCount:voiceOn.length, attendancePct:ap, voicePct:vp, streak, consecutiveMisses:cm, reliabilityScore:reliability, wentRogue:rogue.length };
 }
 
-// ── Prep scores ────────────────────────────────────────────────
 export function newPrepEntry(o = {}) {
-  return { id: uid(), playerId: null, playerName: '', allianceTag: '', prepScore: null, targetScore: null, lastUpdated: new Date().toISOString(), notes: '', history: [], ...o };
+  return { id:uid(), playerId:null, playerName:'', allianceTag:'', prepScore:null, targetScore:null, lastUpdated:new Date().toISOString(), notes:'', history:[], ...o };
 }
 
-// ── Migration ──────────────────────────────────────────────────
 function migrateIfNeeded(data) {
   const m = { ...structuredClone(defaultData), ...data };
   if (!m.events)     m.events     = [];
   if (!m.prepScores) m.prepScores = [];
   if (!m.svsPlans)   m.svsPlans   = [];
-  m.players = (m.players || []).map(p => ({ ...p, eventHistory: p.eventHistory || [] }));
+  m.players = (m.players || []).map(p => ({
+    ...p,
+    eventHistory:  p.eventHistory  || [],
+    joinerHeroes:  p.joinerHeroes  || [],
+  }));
   m._version = CURRENT_VERSION;
   return m;
 }
