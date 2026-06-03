@@ -1,13 +1,55 @@
 {
   "_version": "3.1.0",
-  "lastUpdated": null,
+  "_exported": null,
+  "_note": "Paste an export here to hardcode your roster as seed data.",
   "settings": {
     "allianceName": "",
     "allianceTag": "",
-    "stateId": "3543"
+    "stateId": "3543",
+    "lastUpdated": null
   },
-  "players": [],
+  "players": [
+    {
+      "id": "l796erqwztmpy0vwhd",
+      "fid": "",
+      "username": "Caroline",
+      "alias": "",
+      "allianceTag": "INT",
+      "country": "New Zealand",
+      "timezone": "",
+      "languages": ["English"],
+      "furnaceLevel": null,
+      "infantryCampLevel": null,
+      "lancerCampLevel": null,
+      "marksmanCampLevel": null,
+      "troops": {
+        "infantry": "FC3",
+        "lancer": "FC3",
+        "marksman": "FC3"
+      },
+      "joinerHeroes": [
+        { "hero": "Jessie", "skillLevel": 5, "verified": true, "updatedAt": "2026-06-03T12:09:30.085Z" },
+        { "hero": "Mia", "skillLevel": 5, "verified": true, "updatedAt": "2026-06-03T12:09:55.425Z" },
+        { "hero": "Patrick", "skillLevel": 5, "verified": true, "updatedAt": "2026-06-03T12:10:18.399Z" },
+        { "hero": "Jasser", "skillLevel": 5, "verified": true, "updatedAt": "2026-06-03T12:10:42.967Z" }
+      ],
+      "roles": ["Joiner"],
+      "availability": {
+        "present": "available",
+        "timing": "early",
+        "lateBy": null,
+        "earlyBy": null,
+        "discord": "yes"
+      },
+      "teamAssignment": null,
+      "notes": "",
+      "profileLastUpdated": "2026-06-03T12:10:42.967Z",
+      "createdAt": 1780488506929,
+      "eventHistory": []
+    }
+  ],
   "events": [],
   "prepScores": [],
-  "svsPlans": []
+  "svsPlans": [],
+  "lastUpdated": "2026-06-03T12:10:42.967Z"
 }
