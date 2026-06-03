@@ -4,6 +4,7 @@ import { vibe } from '../../utils/vibe.js';
 import { fmtDateShort } from '../../utils/dates.js';
 import { newEvent, newSnapshot } from '../../data/playerSchema.js';
 import { Field, Inp, ToggleRow, SheetHandle } from '../common/Primitives.jsx';
+import { DeleteConfirmModal } from '../common/DeleteConfirmModal.jsx';
 
 function initials(n) { return (n||'?').split(/\s+/).map(w=>w[0]||'').join('').slice(0,2).toUpperCase()||'?'; }
 
@@ -177,6 +178,7 @@ export function EventsTab({ events, players, onCreateEvent, onUpdateEvent, onDel
   const [snapOpen, setSnapOpen]       = useState(false);
   const [bulkMode, setBulkMode]       = useState(false);
   const [bulkSel, setBulkSel]         = useState(new Set());
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   const activeEvent = events.find(e => e.id === activeEventId);
   const allTags = [...new Set(events.map(e => e.allianceTag).filter(Boolean))];
@@ -320,7 +322,7 @@ export function EventsTab({ events, players, onCreateEvent, onUpdateEvent, onDel
                       </div>
                       <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
                         <span style={{ fontSize:11, fontWeight:700, color:sc, padding:'2px 8px', borderRadius:10, background:sc+'18' }}>{ev.status==='active'?'🔴 Live':ev.status==='completed'?'✓ Done':'Upcoming'}</span>
-                        <button onClick={e => { e.stopPropagation(); if (window.confirm('Delete this event?')) onDeleteEvent(ev.id); }} style={{ fontSize:11, color:C.red+'88', background:'none', border:'none', cursor:'pointer' }}>Delete</button>
+                        <button onClick={e => { e.stopPropagation(); setDeleteConfirmId(ev.id); }} style={{ fontSize:11, color:C.red+'88', background:'none', border:'none', cursor:'pointer' }}>Delete</button>
                       </div>
                     </div>
                     {s.total>0 && <div style={{ display:'flex', gap:10 }}><span style={{ fontSize:12, color:C.green }}>✓ {s.attended}</span><span style={{ fontSize:12, color:C.red }}>✗ {s.noShow}</span><span style={{ fontSize:12, color:C.icy }}>🎙️ {s.voice}</span><span style={{ fontSize:12, color:C.muted }}>{s.total} recorded</span></div>}
@@ -332,6 +334,13 @@ export function EventsTab({ events, players, onCreateEvent, onUpdateEvent, onDel
       )}
       <EventSheet event={editingEvent} open={eventSheetOpen} onClose={() => setEventSheetOpen(false)} onSave={ev => { if (editingEvent) onUpdateEvent(ev); else onCreateEvent(ev); }} players={players}/>
       <SnapshotEditor snapshot={snapEditing?.snapshot} playerName={snapEditing?.playerName} open={snapOpen} onClose={() => setSnapOpen(false)} onSave={saveSnap}/>
+      {deleteConfirmId && (
+        <DeleteConfirmModal
+          message="Delete this event? This cannot be undone."
+          onConfirm={() => { onDeleteEvent(deleteConfirmId); setDeleteConfirmId(null); }}
+          onCancel={() => setDeleteConfirmId(null)}
+        />
+      )}
     </div>
   );
 }

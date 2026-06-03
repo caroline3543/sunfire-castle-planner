@@ -4,10 +4,23 @@ const STORAGE_KEY = 'svs_rally_data';
 export function saveToStorage(data) {
   try {
     const toSave = { ...data, lastUpdated: new Date().toISOString() };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    const serialized = JSON.stringify(toSave);
+
+    // Warn if approaching 4MB (browser limit is ~5MB)
+    if (serialized.length > 4_000_000) {
+      console.warn(`[Sunfire] localStorage approaching limit: ${(serialized.length / 1_000_000).toFixed(1)}MB`);
+    }
+
+    localStorage.setItem(STORAGE_KEY, serialized);
     return toSave;
   } catch (e) {
-    console.error('Failed to save', e);
+    if (e.name === 'QuotaExceededError' || e.code === 22) {
+      // Surface to UI via a custom event that useAppState can listen to
+      window.dispatchEvent(new CustomEvent('sunfire:storage-full'));
+      console.error('[Sunfire] localStorage full — data not saved');
+    } else {
+      console.error('[Sunfire] Failed to save', e);
+    }
     return data;
   }
 }

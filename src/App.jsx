@@ -13,6 +13,8 @@ import { BattleTab }    from './components/svs/BattleTab.jsx';
 import { EventsTab }    from './components/events/EventsTab.jsx';
 import { ScoresTab }    from './components/stats/ScoresTab.jsx';
 import { IntelTab }     from './components/stats/IntelTab.jsx';
+import { TabErrorBoundary } from './components/common/TabErrorBoundary.jsx';
+import JoinerRegistry from './components/JoinerRegistry.jsx';
 import { LandingPage }  from './components/LandingPage.jsx';
 import { DataPanel }    from './components/DataPanel.jsx';
 import { SettingsPanel } from './components/SettingsPanel.jsx';
@@ -36,6 +38,7 @@ export default function App() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [dataPanel, setDataPanel]   = useState(false);
   const [settingsPanel, setSettingsPanel] = useState(false);
+  const [joinerRegistryOpen, setJoinerRegistryOpen] = useState(false);
   const [tutorialMode, setTutorialMode] = useState(null);
   const [tutorialPicker, setTutorialPicker] = useState(false);
   const importFileRef = useRef();
@@ -67,6 +70,7 @@ export default function App() {
             <div style={{ fontSize:13, color:'#5A7A94' }}>{settings?.allianceTag ? `[${settings.allianceTag}] · ` : ''}State {settings?.stateId || '3543'} · {players.length} players</div>
           </div>
           <div style={{ display:'flex', gap:6 }}>
+            <button onClick={()=>setJoinerRegistryOpen(true)} style={hdrBtn}>🦸</button>
             <button onClick={()=>setTutorialPicker(true)} style={hdrBtn}>📖</button>
             <button onClick={()=>setDataPanel(true)} style={hdrBtn}>📦</button>
             <button onClick={()=>setSettingsPanel(true)} style={hdrBtn}>⚙️</button>
@@ -74,15 +78,24 @@ export default function App() {
         </div>
       </div>
 
-      {tab===0 && <RosterTab players={players} events={events} onSavePlayer={savePlayer} onAddPlayers={addPlayers} onUpdatePlayers={updatePlayers} onDeletePlayer={id=>setDeleteTarget(id)} showToast={showToast} />}
-      {tab===1 && <BattleTab plans={svsPlans} players={players} events={events} onSave={saveSvsPlans} onDelete={deleteSvsPlan} showToast={showToast} />}
-      {tab===2 && <EventsTab events={events} players={players} onCreateEvent={createEvent} onUpdateEvent={updateEvent} onDeleteEvent={deleteEvent} showToast={showToast} />}
-      {tab===3 && <ScoresTab prepScores={prepScores} players={players} onUpdate={updatePrepScores} showToast={showToast} />}
-      {tab===4 && <IntelTab players={players} events={events} onUpdatePlayer={savePlayer} showToast={showToast} />}
+      {tab===0 && <TabErrorBoundary><RosterTab players={players} events={events} onSavePlayer={savePlayer} onAddPlayers={addPlayers} onUpdatePlayers={updatePlayers} onDeletePlayer={id=>setDeleteTarget(id)} showToast={showToast} /></TabErrorBoundary>}
+      {tab===1 && <TabErrorBoundary><BattleTab plans={svsPlans} players={players} events={events} onSave={saveSvsPlans} onDelete={deleteSvsPlan} showToast={showToast} /></TabErrorBoundary>}
+      {tab===2 && <TabErrorBoundary><EventsTab events={events} players={players} onCreateEvent={createEvent} onUpdateEvent={updateEvent} onDeleteEvent={deleteEvent} showToast={showToast} /></TabErrorBoundary>}
+      {tab===3 && <TabErrorBoundary><ScoresTab prepScores={prepScores} players={players} onUpdate={updatePrepScores} showToast={showToast} /></TabErrorBoundary>}
+      {tab===4 && <TabErrorBoundary><IntelTab players={players} events={events} onUpdatePlayer={savePlayer} showToast={showToast} /></TabErrorBoundary>}
 
       {deleteTarget && <DeleteConfirmModal message="This player will be permanently removed." onConfirm={()=>{deletePlayer(deleteTarget);setDeleteTarget(null);}} onCancel={()=>setDeleteTarget(null)} />}
       {dataPanel    && <DataPanel data={data} onImport={applyImport} onExport={()=>exportToFile(data,settings?.allianceTag)} onClose={()=>setDataPanel(false)} showToast={showToast} />}
       {settingsPanel && <SettingsPanel settings={settings} onSave={s=>{saveSettings(s);setSettingsPanel(false);vibe(8);}} onClose={()=>setSettingsPanel(false)} />}
+      {joinerRegistryOpen && (
+        <div style={{ position:'fixed', inset:0, zIndex:600, background:'#0A1628', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          <JoinerRegistry
+            players={players}
+            onUpdatePlayer={savePlayer}
+            onClose={() => setJoinerRegistryOpen(false)}
+          />
+        </div>
+      )}
       {tutorialPicker && <TutorialModePicker onSelect={m=>{setTutorialMode(m);setTutorialPicker(false);}} onClose={()=>setTutorialPicker(false)} />}
       {tutorialMode   && <TutorialOverlay mode={tutorialMode} onFinish={()=>setTutorialMode(null)} onSkip={()=>setTutorialMode(null)} />}
       {toast && <Toast msg={toast.msg} type={toast.type} />}

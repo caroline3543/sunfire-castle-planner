@@ -25,6 +25,15 @@ export function useAppState() {
     setTimeout(() => setToast(null), TOAST_DURATION);
   }, []);
 
+  // Warn user if localStorage is full
+  useEffect(() => {
+    function handler() {
+      showToast('⚠️ Storage full — export your data now to avoid losing changes', 'error');
+    }
+    window.addEventListener('sunfire:storage-full', handler);
+    return () => window.removeEventListener('sunfire:storage-full', handler);
+  }, [showToast]);
+
   // ── Player operations ─────────────────────────────────────
   const savePlayer = useCallback((player) => {
     setData(prev => {
