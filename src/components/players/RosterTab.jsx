@@ -1,13 +1,18 @@
-import { useState } from 'react';
-import { C, ROLES, ROLE_COLORS, ROLE_ICONS, TIER_OPTIONS, HEROES_BY_GEN, TIMEZONES, LANGUAGES, COUNTRIES } from '../../utils/constants.js';
+import { useState, useEffect } from 'react';
+import { C, ROLES, ROLE_COLORS, ROLE_ICONS, TIER_OPTIONS, HEROES_BY_GEN, LANGUAGES, COUNTRIES } from '../../utils/constants.js';
 import { vibe } from '../../utils/vibe.js';
-import { fmtDate, fmtDateShort, uid } from '../../utils/dates.js';
+import { fmtDate, fmtDateShort } from '../../utils/dates.js';
 import { calcMetrics } from '../../data/metrics.js';
-import { newPlayer, newSnapshot } from '../../data/playerSchema.js';
+import { newPlayer } from '../../data/playerSchema.js';
 import { resolveBatchRows, mergePlayerObjects } from '../../services/batchAddService.js';
-import { normalizeName } from '../../utils/normalize.js';
 import { searchPlayers } from '../../services/playerAutosuggest.js';
 import { Field, Inp, Sel, TierPill, ToggleRow, ReliabilityBadge, AvailChip, SheetHandle } from '../common/Primitives.jsx';
+
+// Alliance quick-select chips for batch add
+const ALLIANCE_CHIPS = ['INT','SOV','LEO','420','WWS'];
+
+// Furnace level options
+const FC_OPTIONS = ['FC1','FC2','FC3','FC4','FC5'];
 
 function initials(n) {
   return (n||'?').split(/\s+/).map(w=>w[0]||'').join('').slice(0,2).toUpperCase()||'?';
@@ -37,7 +42,7 @@ function PlayerCard({ player, onClick, onDelete, events }) {
           {metrics && <span style={{ fontSize:11, fontWeight:700, color:metrics.reliabilityScore>=70?C.green:metrics.reliabilityScore>=40?C.gold:C.red, marginLeft:2 }}>{metrics.reliabilityScore}pts</span>}
         </div>
         <div style={{ fontSize:12, color:C.icy, marginBottom:4 }}>
-          {[player.allianceTag&&`[${player.allianceTag}]`,player.country,player.timezone].filter(Boolean).join(' · ')}
+          {[player.allianceTag&&`[${player.allianceTag}]`, player.furnaceLevel&&`FC${player.furnaceLevel}`, player.country].filter(Boolean).join(' · ')}
         </div>
         <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
           {[['🛡️',player.troops?.infantry,C.inf],['⚔️',player.troops?.lancer,C.lan],['🏹',player.troops?.marksman,C.mar]].map(([i,t,c],idx) =>
@@ -48,13 +53,20 @@ function PlayerCard({ player, onClick, onDelete, events }) {
         </div>
         {player.profileLastUpdated && <div style={{ fontSize:11, color:C.muted, marginTop:4 }}>Updated {fmtDate(player.profileLastUpdated)}</div>}
       </div>
-      <button onClick={e=>{e.stopPropagation();onDelete(player.id);}} style={{ background:'none', border:'none', color:C.red+'88', fontSize:18, cursor:'pointer', padding:'8px', flexShrink:0 }}>✕</button>
+      <button onClick={e=>{e.stopPropagation();onDelete(player.id);}} style={{ background:'none', border:'none', color:C.red+'88', fontSize:20, cursor:'pointer', padding:'8px', flexShrink:0 }}>✕</button>
     </div>
   );
 }
 
 // ── Profile View ───────────────────────────────────────────────
 function ProfileView({ player, open, onClose, onEdit, events }) {
+  useEffect(() => {
+    if (!open) return;
+    function handler(e) { if (e.key === 'Escape') onClose(); }
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open, onClose]);
+
   if (!open||!player) return null;
   const dn = player.username||player.alias||'Unknown';
   const rc = ROLE_COLORS[player.roles?.[0]]||C.muted;
@@ -76,13 +88,13 @@ function ProfileView({ player, open, onClose, onEdit, events }) {
           </div>
           <div style={{ display:'flex', gap:8 }}>
             <button onClick={onEdit} style={{ height:36, padding:'0 16px', borderRadius:20, background:C.gold, color:C.bg, fontWeight:700, fontSize:14, border:'none', cursor:'pointer' }}>Edit</button>
-            <button onClick={onClose} style={{ background:'none', border:'none', color:C.muted, fontSize:22, cursor:'pointer', lineHeight:1 }}>✕</button>
+            <button onClick={onClose} style={{ background:'none', border:'none', color:C.muted, fontSize:28, cursor:'pointer', lineHeight:1, padding:'0 4px' }}>✕</button>
           </div>
         </div>
 
         <div style={{ background:C.section, borderRadius:12, padding:16, marginBottom:12 }}>
           <div style={{ fontSize:12, fontWeight:700, color:C.muted, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:10 }}>Identity</div>
-          {[['FID',player.fid],['Alliance',player.allianceTag?`[${player.allianceTag}]`:null],['Country',player.country],['Region',player.timezone],['Languages',player.languages?.join(', ')],['Furnace',player.furnaceLevel?`FC${player.furnaceLevel}`:null]].filter(([,v])=>v).map(([l,v])=>(
+          {[['FID',player.fid],['Alliance',player.allianceTag?`[${player.allianceTag}]`:null],['Furnace',player.furnaceLevel?`FC${player.furnaceLevel}`:null],['Country',player.country],['Languages',player.languages?.join(', ')]].filter(([,v])=>v).map(([l,v])=>(
             <div key={l} style={{ display:'flex', justifyContent:'space-between', padding:'6px 0', borderBottom:`1px solid ${C.border}22` }}>
               <span style={{ fontSize:14, color:C.muted }}>{l}</span>
               <span style={{ fontSize:14, color:C.white, fontWeight:600 }}>{v}</span>
@@ -159,6 +171,8 @@ function ProfileView({ player, open, onClose, onEdit, events }) {
             <div style={{ fontSize:14, color:C.icy, lineHeight:1.6, whiteSpace:'pre-wrap' }}>{player.notes}</div>
           </div>
         )}
+
+        <button onClick={onClose} style={{ width:'100%', height:48, borderRadius:12, background:C.section, border:`1px solid ${C.border}`, color:C.icy, fontWeight:600, fontSize:16, cursor:'pointer' }}>Close</button>
       </div>
     </div>
   );
@@ -166,20 +180,24 @@ function ProfileView({ player, open, onClose, onEdit, events }) {
 
 // ── Player Edit Sheet ──────────────────────────────────────────
 function PlayerSheet({ player, open, onClose, onSave }) {
-  const [p, setP] = useState(()=>player||newPlayer());
+  const [p, setP]           = useState(() => player||newPlayer());
   const [activeTab, setActiveTab] = useState('identity');
-  useState(()=>{ if(open){ setP(player?{...player}:newPlayer()); setActiveTab('identity'); } });
-  // reset on open
-  const [lastOpen, setLastOpen] = useState(open);
-  if (open !== lastOpen) {
-    setLastOpen(open);
-    if (open) { setP(player?{...player}:newPlayer()); setActiveTab('identity'); }
-  }
 
-  function upd(k,v){ setP(prev=>({...prev,[k]:v,profileLastUpdated:new Date().toISOString()})); }
-  function updT(k,v){ setP(prev=>({...prev,troops:{...prev.troops,[k]:v},profileLastUpdated:new Date().toISOString()})); }
-  function updA(patch){ setP(prev=>({...prev,availability:{...prev.availability,...patch},profileLastUpdated:new Date().toISOString()})); }
-  function save(){ onSave({...p,profileLastUpdated:p.profileLastUpdated||new Date().toISOString()}); onClose(); vibe(8); }
+  useEffect(() => {
+    if (open) { setP(player ? {...player} : newPlayer()); setActiveTab('identity'); }
+  }, [open, player?.id]);
+
+  useEffect(() => {
+    if (!open) return;
+    function handler(e) { if (e.key === 'Escape') onClose(); }
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open, onClose]);
+
+  function upd(k,v)    { setP(prev=>({...prev,[k]:v,profileLastUpdated:new Date().toISOString()})); }
+  function updT(k,v)   { setP(prev=>({...prev,troops:{...prev.troops,[k]:v},profileLastUpdated:new Date().toISOString()})); }
+  function updA(patch) { setP(prev=>({...prev,availability:{...prev.availability,...patch},profileLastUpdated:new Date().toISOString()})); }
+  function save()      { onSave({...p,profileLastUpdated:p.profileLastUpdated||new Date().toISOString()}); onClose(); vibe(8); }
 
   const TABS = [{id:'identity',label:'👤 Identity'},{id:'combat',label:'⚔️ Combat'},{id:'avail',label:'📅 Availability'}];
   if (!open) return null;
@@ -190,7 +208,7 @@ function PlayerSheet({ player, open, onClose, onSave }) {
         <SheetHandle />
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
           <div style={{ fontSize:18, fontWeight:700, color:C.white }}>{player?'Edit Player':'Add Player'}</div>
-          <button onClick={onClose} style={{ background:'none', border:'none', color:C.muted, fontSize:22, cursor:'pointer', lineHeight:1 }}>✕</button>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:C.muted, fontSize:28, cursor:'pointer', lineHeight:1, padding:'0 4px' }}>✕</button>
         </div>
         <div style={{ display:'flex', gap:6, marginBottom:20, overflowX:'auto' }}>
           {TABS.map(t=><button key={t.id} onClick={()=>setActiveTab(t.id)} style={{ padding:'8px 14px', borderRadius:20, whiteSpace:'nowrap', background:activeTab===t.id?C.gold+'22':C.section, border:`1px solid ${activeTab===t.id?C.gold:C.border}`, color:activeTab===t.id?C.gold:C.muted, fontWeight:600, fontSize:13, cursor:'pointer' }}>{t.label}</button>)}
@@ -202,8 +220,15 @@ function PlayerSheet({ player, open, onClose, onSave }) {
             <Field label="Alias / Real Name"><Inp value={p.alias} onChange={v=>upd('alias',v)} placeholder="Nickname"/></Field>
             <Field label="WOS User ID / FID"><Inp value={p.fid} onChange={v=>upd('fid',v)} placeholder="12345678" inputMode="numeric"/></Field>
             <Field label="Alliance Tag"><Inp value={p.allianceTag} onChange={v=>upd('allianceTag',v)} placeholder="R3K"/></Field>
+            <Field label="Furnace Level">
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                {FC_OPTIONS.map(fc=>{
+                  const sel = p.furnaceLevel===fc;
+                  return <button key={fc} onClick={()=>upd('furnaceLevel',sel?null:fc)} style={{ padding:'8px 16px', borderRadius:20, minHeight:40, border:`1px solid ${sel?C.gold:C.border}`, background:sel?C.gold+'22':C.section, color:sel?C.gold:C.muted, fontWeight:700, fontSize:14, cursor:'pointer' }}>{fc}</button>;
+                })}
+              </div>
+            </Field>
             <Field label="Country"><Sel value={p.country} onChange={v=>upd('country',v)} options={COUNTRIES} placeholder="Select country…"/></Field>
-            <Field label="Region / Timezone"><Sel value={p.timezone} onChange={v=>upd('timezone',v)} options={TIMEZONES} placeholder="Select region…"/></Field>
             <Field label="Languages">
               <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
                 {LANGUAGES.map(lang=>{const sel=p.languages?.includes(lang);return(
@@ -211,23 +236,12 @@ function PlayerSheet({ player, open, onClose, onSave }) {
                 );})}
               </div>
             </Field>
-            <Field label="Furnace Level"><Inp value={p.furnaceLevel??''} onChange={v=>upd('furnaceLevel',v?parseInt(v):null)} placeholder="28" inputMode="numeric" type="number"/></Field>
             <Field label="Notes"><textarea value={p.notes||''} onChange={e=>upd('notes',e.target.value)} placeholder="Any notes…" style={{ width:'100%', minHeight:80, background:C.section, border:`1px solid ${C.border}`, borderRadius:10, padding:'12px 14px', fontSize:16, color:C.white, resize:'none', boxSizing:'border-box', fontFamily:'inherit' }}/></Field>
           </div>
         )}
 
         {activeTab==='combat'&&(
           <div>
-            <Field label="Camp Levels">
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10 }}>
-                {[['🛡️ Inf','infantryCampLevel',C.inf],['⚔️ Lan','lancerCampLevel',C.lan],['🏹 Mar','marksmanCampLevel',C.mar]].map(([l,k,c])=>(
-                  <div key={k} style={{ background:C.section, borderRadius:10, padding:10, textAlign:'center' }}>
-                    <div style={{ fontSize:11, color:c, fontWeight:700, marginBottom:6 }}>{l}</div>
-                    <input type="number" inputMode="numeric" value={p[k]??''} placeholder="–" onChange={e=>upd(k,e.target.value?parseInt(e.target.value):null)} style={{ width:'100%', background:C.card, border:`1px solid ${c}44`, borderRadius:8, padding:'8px 0', fontSize:18, fontWeight:700, color:c, textAlign:'center', boxSizing:'border-box', fontFamily:'inherit' }}/>
-                  </div>
-                ))}
-              </div>
-            </Field>
             <Field label="🛡️ Infantry Tier"><TierPill value={p.troops.infantry} onChange={v=>updT('infantry',v)} color={C.inf}/></Field>
             <Field label="⚔️ Lancer Tier"><TierPill value={p.troops.lancer} onChange={v=>updT('lancer',v)} color={C.lan}/></Field>
             <Field label="🏹 Marksman Tier"><TierPill value={p.troops.marksman} onChange={v=>updT('marksman',v)} color={C.mar}/></Field>
@@ -250,7 +264,7 @@ function PlayerSheet({ player, open, onClose, onSave }) {
                     ))}
                   </div>
                 ) : (
-                  <div style={{ fontSize:13, color:C.muted }}>No joiner heroes recorded. Use 🦸 Joiner Registry in Intel tab.</div>
+                  <div style={{ fontSize:13, color:C.muted }}>No joiner heroes yet. Use 🦸 Joiner Registry in Intel tab.</div>
                 )}
               </div>
             </Field>
@@ -283,9 +297,10 @@ function PlayerSheet({ player, open, onClose, onSave }) {
           </div>
         )}
 
-        <button onClick={save} style={{ width:'100%', height:54, borderRadius:12, background:C.gold, color:C.bg, fontWeight:700, fontSize:17, border:'none', cursor:'pointer', marginTop:8 }}>
-          Save Player
-        </button>
+        <div style={{ display:'flex', gap:10, marginTop:8 }}>
+          <button onClick={onClose} style={{ flex:1, height:54, borderRadius:12, background:C.section, border:`1px solid ${C.border}`, color:C.icy, fontWeight:600, fontSize:16, cursor:'pointer' }}>Cancel</button>
+          <button onClick={save} style={{ flex:2, height:54, borderRadius:12, background:C.gold, color:C.bg, fontWeight:700, fontSize:17, border:'none', cursor:'pointer' }}>Save Player</button>
+        </div>
       </div>
     </div>
   );
@@ -293,24 +308,30 @@ function PlayerSheet({ player, open, onClose, onSave }) {
 
 // ── Batch Add Sheet ────────────────────────────────────────────
 function BatchAddSheet({ open, onClose, members, onAddNew, onUpdateExisting }) {
-  const [phase, setPhase]       = useState(0);
-  const [rawLines, setRawLines] = useState([]);
+  const [phase, setPhase]         = useState(0);
+  const [rawLines, setRawLines]   = useState([]);
   const [inputText, setInputText] = useState('');
   const [suggestions, setSuggestions] = useState([]);
-  const [tagAll, setTagAll]     = useState('');
-  const [tzAll, setTzAll]       = useState('');
-  const [showOpt, setShowOpt]   = useState(false);
-  const [resolved, setResolved] = useState(null);
-  const [fuzzyDec, setFuzzyDec] = useState({});
-  const [voiceSet, setVoiceSet] = useState(new Set());
-  const [lateSet, setLateSet]   = useState(new Set());
-  const [lateBy, setLateBy]     = useState('unknown');
-  const [earlySet, setEarlySet] = useState(new Set());
+  const [tagAll, setTagAll]       = useState('');
+  const [showOpt, setShowOpt]     = useState(false);
+  const [resolved, setResolved]   = useState(null);
+  const [fuzzyDec, setFuzzyDec]   = useState({});
+  const [voiceSet, setVoiceSet]   = useState(new Set());
+  const [lateSet, setLateSet]     = useState(new Set());
+  const [lateBy, setLateBy]       = useState('unknown');
+  const [earlySet, setEarlySet]   = useState(new Set());
   const [unavailSet, setUnavailSet] = useState(new Set());
   const [grpTierSel, setGrpTierSel] = useState(new Set());
   const [grpTroops, setGrpTroops]   = useState({infantry:null,lancer:null,marksman:null});
   const [memTroops, setMemTroops]   = useState({});
-  const [tierIdx, setTierIdx]   = useState(0);
+  const [tierIdx, setTierIdx]     = useState(0);
+
+  useEffect(() => {
+    if (!open) return;
+    function handler(e) { if (e.key === 'Escape') handleClose(); }
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open]);
 
   function updateSuggestions(text) {
     if (!text.trim()) { setSuggestions([]); return; }
@@ -335,11 +356,12 @@ function BatchAddSheet({ open, onClose, members, onAddNew, onUpdateExisting }) {
   const tierStack = active.filter(n=>!grpTierSel.has(n));
 
   function resetAll() {
-    setPhase(0);setRawLines([]);setInputText('');setSuggestions([]);setTagAll('');setTzAll('');setShowOpt(false);setResolved(null);setFuzzyDec({});
+    setPhase(0);setRawLines([]);setInputText('');setSuggestions([]);setTagAll('');setShowOpt(false);setResolved(null);setFuzzyDec({});
     setVoiceSet(new Set());setLateSet(new Set());setLateBy('unknown');setEarlySet(new Set());setUnavailSet(new Set());
     setGrpTierSel(new Set());setGrpTroops({infantry:null,lancer:null,marksman:null});setMemTroops({});setTierIdx(0);
   }
-  function tog(set,fn,k){const n=new Set(set);n.has(k)?n.delete(k):n.add(k);fn(n);}
+  function handleClose() { resetAll(); onClose(); }
+  function tog(set,fn,k) { const n=new Set(set);n.has(k)?n.delete(k):n.add(k);fn(n); }
 
   function resolve() {
     const res = resolveBatchRows(rawLines, members);
@@ -353,9 +375,9 @@ function BatchAddSheet({ open, onClose, members, onAddNew, onUpdateExisting }) {
 
   function buildAndSave() {
     const toCreate=[],toUpdate=[];
-    (resolved?.exact||[]).forEach(r=>{const patch={availability:buildAvail(r.name),troops:buildTroops(r.name)};if(tagAll)patch.allianceTag=tagAll;if(tzAll)patch.timezone=tzAll;toUpdate.push(mergePlayerObjects(r.existingPlayer,patch));});
-    (resolved?.fuzzy||[]).forEach(r=>{const d=fuzzyDec[r.name];if(d==='skip')return;const patch={availability:buildAvail(r.name),troops:buildTroops(r.name)};if(tagAll)patch.allianceTag=tagAll;if(tzAll)patch.timezone=tzAll;d==='update'?toUpdate.push(mergePlayerObjects(r.existingPlayer,patch)):toCreate.push(newPlayer({username:r.name,allianceTag:tagAll,timezone:tzAll,...patch}));});
-    (resolved?.fresh||[]).forEach(r=>toCreate.push(newPlayer({username:r.name,allianceTag:tagAll,timezone:tzAll,troops:buildTroops(r.name),availability:buildAvail(r.name)})));
+    (resolved?.exact||[]).forEach(r=>{const patch={availability:buildAvail(r.name),troops:buildTroops(r.name)};if(tagAll)patch.allianceTag=tagAll;toUpdate.push(mergePlayerObjects(r.existingPlayer,patch));});
+    (resolved?.fuzzy||[]).forEach(r=>{const d=fuzzyDec[r.name];if(d==='skip')return;const patch={availability:buildAvail(r.name),troops:buildTroops(r.name)};if(tagAll)patch.allianceTag=tagAll;d==='update'?toUpdate.push(mergePlayerObjects(r.existingPlayer,patch)):toCreate.push(newPlayer({username:r.name,allianceTag:tagAll,...patch}));});
+    (resolved?.fresh||[]).forEach(r=>toCreate.push(newPlayer({username:r.name,allianceTag:tagAll,troops:buildTroops(r.name),availability:buildAvail(r.name)})));
     if(toUpdate.length)onUpdateExisting(toUpdate);
     if(toCreate.length)onAddNew(toCreate);
     vibe([10,50,10]);resetAll();onClose();
@@ -368,6 +390,12 @@ function BatchAddSheet({ open, onClose, members, onAddNew, onUpdateExisting }) {
     <div style={{ position:'fixed', inset:0, background:'#000a', zIndex:200, display:'flex', alignItems:'flex-end' }}>
       <div style={{ background:C.card, borderRadius:'20px 20px 0 0', width:'100%', maxHeight:'92vh', overflowY:'auto', padding:'16px 20px 80px' }}>
         <SheetHandle />
+
+        {/* Header with X */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+          <div style={{ fontSize:18, fontWeight:700, color:C.white }}>Batch Add Players</div>
+          <button onClick={handleClose} style={{ background:'none', border:'none', color:C.muted, fontSize:28, cursor:'pointer', lineHeight:1, padding:'0 4px' }}>✕</button>
+        </div>
 
         {/* Phase stepper */}
         <div style={{ display:'flex', alignItems:'center', marginBottom:24 }}>
@@ -386,17 +414,19 @@ function BatchAddSheet({ open, onClose, members, onAddNew, onUpdateExisting }) {
         {phase===0&&(
           <div>
             <div style={{ fontSize:22, fontWeight:700, color:C.white, marginBottom:6 }}>Who's joining?</div>
-            <div style={{ fontSize:13, color:C.icy, marginBottom:16, lineHeight:1.6 }}>Type names one at a time. Select from suggestions to link existing players.</div>
+            <div style={{ fontSize:13, color:C.icy, marginBottom:16 }}>Type names one at a time. Tap suggestions to link existing players.</div>
+
             {rawLines.length>0&&(
               <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:12 }}>
                 {rawLines.map((line,i)=>(
                   <div key={i} style={{ display:'inline-flex', alignItems:'center', gap:6, background:line.linkedId?C.gold+'18':C.section, border:`1px solid ${line.linkedId?C.gold:C.border}`, borderRadius:20, padding:'6px 10px' }}>
                     <span style={{ fontSize:13, color:line.linkedId?C.gold:C.white }}>{line.text}{line.linkedId&&' ✓'}</span>
-                    <button onClick={()=>removeLine(i)} style={{ background:'none', border:'none', color:C.muted, fontSize:14, cursor:'pointer', padding:0, lineHeight:1 }}>×</button>
+                    <button onClick={()=>removeLine(i)} style={{ background:'none', border:'none', color:C.muted, fontSize:16, cursor:'pointer', padding:0, lineHeight:1 }}>×</button>
                   </div>
                 ))}
               </div>
             )}
+
             <div style={{ position:'relative', marginBottom:12 }}>
               <div style={{ display:'flex', gap:8 }}>
                 <input value={inputText} onChange={e=>{setInputText(e.target.value);updateSuggestions(e.target.value);}} onKeyDown={e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();addLine(inputText);}}} placeholder="Type name, press Enter…" style={{ flex:1, background:C.section, border:`1px solid ${C.border}`, borderRadius:10, padding:'12px 14px', fontSize:16, color:C.white, fontFamily:'inherit' }}/>
@@ -404,11 +434,11 @@ function BatchAddSheet({ open, onClose, members, onAddNew, onUpdateExisting }) {
               </div>
               {suggestions.length>0&&(
                 <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, background:C.card, border:`1px solid ${C.border}`, borderRadius:12, overflow:'hidden', zIndex:600, boxShadow:'0 8px 24px #000a' }}>
-                  <div style={{ fontSize:11, color:C.muted, padding:'8px 14px 4px', textTransform:'uppercase', letterSpacing:'0.08em', fontWeight:700 }}>Existing players — tap to link</div>
+                  <div style={{ fontSize:11, color:C.muted, padding:'8px 14px 4px', textTransform:'uppercase', letterSpacing:'0.08em', fontWeight:700 }}>Existing — tap to link</div>
                   {suggestions.map(p=>(
                     <button key={p.id} onClick={()=>{addLine(p.username||p.alias||'',p.id);vibe(8);}} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'10px 14px', background:'none', border:'none', borderTop:`1px solid ${C.border}22`, cursor:'pointer', textAlign:'left' }}>
                       <div style={{ width:30, height:30, borderRadius:'50%', background:C.muted+'33', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:12, color:C.white, flexShrink:0 }}>{initials(p.username||p.alias||'?')}</div>
-                      <div style={{ flex:1 }}><div style={{ fontSize:14, fontWeight:700, color:C.white }}>{p.username||p.alias||'?'}</div><div style={{ fontSize:11, color:C.muted }}>{p.allianceTag?`[${p.allianceTag}]`:''} · will update</div></div>
+                      <div style={{ flex:1 }}><div style={{ fontSize:14, fontWeight:700, color:C.white }}>{p.username||p.alias||'?'}</div><div style={{ fontSize:11, color:C.muted }}>{p.allianceTag?`[${p.allianceTag}]`:''}</div></div>
                       <span style={{ fontSize:12, color:C.gold, fontWeight:600 }}>Link ›</span>
                     </button>
                   ))}
@@ -416,17 +446,31 @@ function BatchAddSheet({ open, onClose, members, onAddNew, onUpdateExisting }) {
                 </div>
               )}
             </div>
-            {rawLines.length>0&&<div style={{ fontSize:13, color:C.icy, marginBottom:16 }}><span style={{ color:C.white, fontWeight:600 }}>{rawLines.length}</span> entries · <span style={{ color:C.gold }}>{rawLines.filter(l=>l.linkedId).length} linked</span></div>}
+
+            {rawLines.length>0&&<div style={{ fontSize:13, color:C.icy, marginBottom:12 }}><span style={{ color:C.white, fontWeight:600 }}>{rawLines.length}</span> entries · <span style={{ color:C.gold }}>{rawLines.filter(l=>l.linkedId).length} linked</span></div>}
+
+            {/* Set for all */}
             <button onClick={()=>setShowOpt(!showOpt)} style={{ background:'none', border:'none', color:C.gold, fontSize:14, cursor:'pointer', padding:'4px 0', marginBottom:12 }}>{showOpt?'▾':'▸'} Set for all (optional)</button>
             {showOpt&&(
               <div style={{ background:C.section, borderRadius:12, padding:16, marginBottom:16 }}>
-                <div style={{ marginBottom:12 }}><label style={{ fontSize:12, color:C.muted, display:'block', marginBottom:6, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em' }}>Alliance Tag</label><Inp value={tagAll} onChange={setTagAll} placeholder="R3K"/></div>
-                <div><label style={{ fontSize:12, color:C.muted, display:'block', marginBottom:6, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em' }}>Region</label><Sel value={tzAll} onChange={setTzAll} options={TIMEZONES} placeholder="Select region…"/></div>
+                <div style={{ fontSize:12, color:C.muted, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>Alliance Tag</div>
+                {/* Quick chips */}
+                <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:10 }}>
+                  {ALLIANCE_CHIPS.map(chip=>(
+                    <button key={chip} onClick={()=>setTagAll(tagAll===chip?'':chip)} style={{ padding:'8px 16px', borderRadius:20, minHeight:36, border:`1px solid ${tagAll===chip?C.gold:C.border}`, background:tagAll===chip?C.gold+'22':C.card, color:tagAll===chip?C.gold:C.muted, fontWeight:700, fontSize:14, cursor:'pointer' }}>{chip}</button>
+                  ))}
+                </div>
+                <Inp value={tagAll} onChange={setTagAll} placeholder="Or type custom tag…"/>
+                {tagAll&&<div style={{ fontSize:12, color:C.green, marginTop:6 }}>✓ Will apply [{tagAll}] to all {rawLines.length} players</div>}
               </div>
             )}
-            <button disabled={rawLines.length===0} onClick={resolve} style={{ width:'100%', height:54, borderRadius:12, background:rawLines.length>0?C.gold:C.border, color:C.bg, fontWeight:700, fontSize:17, border:'none', cursor:rawLines.length>0?'pointer':'default' }}>
-              Continue with {rawLines.length} member{rawLines.length!==1?'s':''} →
-            </button>
+
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={handleClose} style={{ flex:1, height:54, borderRadius:12, background:C.section, border:`1px solid ${C.border}`, color:C.icy, fontWeight:600, fontSize:16, cursor:'pointer' }}>Cancel</button>
+              <button disabled={rawLines.length===0} onClick={resolve} style={{ flex:2, height:54, borderRadius:12, background:rawLines.length>0?C.gold:C.border, color:C.bg, fontWeight:700, fontSize:17, border:'none', cursor:rawLines.length>0?'pointer':'default' }}>
+                Continue with {rawLines.length} →
+              </button>
+            </div>
           </div>
         )}
 
@@ -440,10 +484,12 @@ function BatchAddSheet({ open, onClose, members, onAddNew, onUpdateExisting }) {
               ))}
             </div>
             {resolved.exact.length>0&&<div style={{ marginBottom:16 }}><div style={{ fontSize:13, fontWeight:700, color:C.gold, marginBottom:8 }}>✓ Will update</div>{resolved.exact.map(r=><div key={r.name} style={{ background:C.section, borderRadius:10, padding:'10px 14px', marginBottom:6, display:'flex', justifyContent:'space-between' }}><div style={{ fontSize:14, fontWeight:700, color:C.white }}>{r.name}</div><span style={{ fontSize:12, color:C.gold }}>Update</span></div>)}</div>}
-            {resolved.fuzzy.length>0&&<div style={{ marginBottom:16 }}><div style={{ fontSize:13, fontWeight:700, color:C.mar, marginBottom:8 }}>⚠️ Possible duplicates</div>{resolved.fuzzy.map(r=>{const d=fuzzyDec[r.name]||'update';return(<div key={r.name} style={{ background:C.section, borderRadius:10, padding:14, marginBottom:8 }}><div style={{ marginBottom:8 }}><div style={{ fontSize:14, fontWeight:700, color:C.white }}>{r.name}</div><div style={{ fontSize:11, color:C.muted }}>similar to "{r.existingPlayer.username||r.existingPlayer.alias}" ({Math.round(r.score*100)}%)</div></div><div style={{ display:'flex', gap:8 }}>{[['update','Update',C.gold],['create','Create new',C.green],['skip','Skip',C.muted]].map(([v,l,c])=><button key={v} onClick={()=>setFuzzyDec(prev=>({...prev,[r.name]:v}))} style={{ flex:1, height:36, borderRadius:10, border:`1px solid ${d===v?c:C.border}`, background:d===v?c+'22':C.card, color:d===v?c:C.muted, fontWeight:600, fontSize:12, cursor:'pointer' }}>{l}</button>)}</div></div>);})}</div>}
+            {resolved.fuzzy.length>0&&<div style={{ marginBottom:16 }}><div style={{ fontSize:13, fontWeight:700, color:C.mar, marginBottom:8 }}>⚠️ Possible duplicates</div>{resolved.fuzzy.map(r=>{const d=fuzzyDec[r.name]||'update';return(<div key={r.name} style={{ background:C.section, borderRadius:10, padding:14, marginBottom:8 }}><div style={{ marginBottom:8 }}><div style={{ fontSize:14, fontWeight:700, color:C.white }}>{r.name}</div><div style={{ fontSize:11, color:C.muted }}>similar to "{r.existingPlayer.username||r.existingPlayer.alias}" ({Math.round(r.score*100)}%)</div></div><div style={{ display:'flex', gap:8 }}>{[['update','Update',C.gold],['create','New',C.green],['skip','Skip',C.muted]].map(([v,l,c])=><button key={v} onClick={()=>setFuzzyDec(prev=>({...prev,[r.name]:v}))} style={{ flex:1, height:36, borderRadius:10, border:`1px solid ${d===v?c:C.border}`, background:d===v?c+'22':C.card, color:d===v?c:C.muted, fontWeight:600, fontSize:12, cursor:'pointer' }}>{l}</button>)}</div></div>);})}</div>}
             {resolved.fresh.length>0&&<div style={{ marginBottom:20 }}><div style={{ fontSize:13, fontWeight:700, color:C.green, marginBottom:8 }}>＋ New players</div>{resolved.fresh.map(r=><div key={r.name} style={{ background:C.section, borderRadius:10, padding:'10px 14px', marginBottom:6, display:'flex', justifyContent:'space-between' }}><div style={{ fontSize:14, fontWeight:700, color:C.white }}>{r.name}</div><span style={{ fontSize:12, color:C.green }}>New</span></div>)}</div>}
-            <button onClick={()=>{setPhase(2);vibe(8);}} style={{ width:'100%', height:54, borderRadius:12, background:C.gold, color:C.bg, fontWeight:700, fontSize:17, border:'none', cursor:'pointer', marginBottom:12 }}>Continue →</button>
-            <button onClick={()=>setPhase(0)} style={{ display:'block', margin:'0 auto', background:'none', border:'none', color:C.muted, fontSize:13, cursor:'pointer', padding:'8px 0' }}>← Back</button>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={()=>setPhase(0)} style={{ flex:1, height:54, borderRadius:12, background:C.section, border:`1px solid ${C.border}`, color:C.icy, fontWeight:600, fontSize:16, cursor:'pointer' }}>← Back</button>
+              <button onClick={()=>{setPhase(2);vibe(8);}} style={{ flex:2, height:54, borderRadius:12, background:C.gold, color:C.bg, fontWeight:700, fontSize:17, border:'none', cursor:'pointer' }}>Continue →</button>
+            </div>
           </div>
         )}
 
@@ -451,7 +497,11 @@ function BatchAddSheet({ open, onClose, members, onAddNew, onUpdateExisting }) {
         {phase===2&&(
           <div>
             <div style={{ fontSize:22, fontWeight:700, color:C.white, marginBottom:16 }}>Availability</div>
-            {[{label:'🎙️ Discord voice?',set:voiceSet,fn:setVoiceSet,col:C.gold},{label:'🕐 Arriving late?',set:lateSet,fn:setLateSet,col:C.icy,extra:lateSet.size>0&&<div style={{ marginTop:10 }}><div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>How late?</div><div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>{['15 min','30 min','1 hr','Unknown'].map(o=><button key={o} onClick={()=>setLateBy(o)} style={{ padding:'6px 14px', borderRadius:20, minHeight:36, border:`1px solid ${lateBy===o?C.icy:C.border}`, background:lateBy===o?C.icy+'22':C.section, color:lateBy===o?C.icy:C.muted, fontWeight:600, fontSize:13, cursor:'pointer' }}>{o}</button>)}</div></div>},{label:"❌ Won't make it?",set:unavailSet,fn:setUnavailSet,col:C.red}].map(({label,set,fn,col,extra})=>(
+            {[
+              {label:'🎙️ Discord voice?',set:voiceSet,fn:setVoiceSet,col:C.gold},
+              {label:'🕐 Arriving late?',set:lateSet,fn:setLateSet,col:C.icy,extra:lateSet.size>0&&<div style={{ marginTop:10 }}><div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>How late?</div><div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>{['15 min','30 min','1 hr','Unknown'].map(o=><button key={o} onClick={()=>setLateBy(o)} style={{ padding:'6px 14px', borderRadius:20, minHeight:36, border:`1px solid ${lateBy===o?C.icy:C.border}`, background:lateBy===o?C.icy+'22':C.section, color:lateBy===o?C.icy:C.muted, fontWeight:600, fontSize:13, cursor:'pointer' }}>{o}</button>)}</div></div>},
+              {label:"❌ Won't make it?",set:unavailSet,fn:setUnavailSet,col:C.red},
+            ].map(({label,set,fn,col,extra})=>(
               <div key={label} style={{ marginBottom:24 }}>
                 <div style={{ fontSize:16, fontWeight:700, color:C.white, marginBottom:8 }}>{label}</div>
                 <div style={{ display:'flex', gap:8, marginBottom:10 }}>
@@ -463,8 +513,11 @@ function BatchAddSheet({ open, onClose, members, onAddNew, onUpdateExisting }) {
                 {extra}
               </div>
             ))}
-            <button onClick={()=>{setPhase(3);vibe(8);}} style={{ width:'100%', height:54, borderRadius:12, background:C.gold, color:C.bg, fontWeight:700, fontSize:17, border:'none', cursor:'pointer', marginBottom:12 }}>Continue →</button>
-            <button onClick={()=>setPhase(3)} style={{ display:'block', margin:'0 auto', background:'none', border:'none', color:C.muted, fontSize:13, cursor:'pointer', padding:'8px 0' }}>Skip →</button>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={()=>setPhase(1)} style={{ flex:1, height:54, borderRadius:12, background:C.section, border:`1px solid ${C.border}`, color:C.icy, fontWeight:600, fontSize:16, cursor:'pointer' }}>← Back</button>
+              <button onClick={()=>{setPhase(3);vibe(8);}} style={{ flex:2, height:54, borderRadius:12, background:C.gold, color:C.bg, fontWeight:700, fontSize:17, border:'none', cursor:'pointer' }}>Continue →</button>
+            </div>
+            <button onClick={()=>setPhase(3)} style={{ display:'block', margin:'10px auto 0', background:'none', border:'none', color:C.muted, fontSize:13, cursor:'pointer' }}>Skip →</button>
           </div>
         )}
 
@@ -505,10 +558,13 @@ function BatchAddSheet({ open, onClose, members, onAddNew, onUpdateExisting }) {
                 </div>
               );
             })()}
-            <button onClick={buildAndSave} style={{ width:'100%', height:54, borderRadius:12, background:C.gold, color:C.bg, fontWeight:700, fontSize:17, border:'none', cursor:'pointer', marginBottom:12 }}>
-              Finish & Save {active.length} Player{active.length!==1?'s':''}
-            </button>
-            <button onClick={buildAndSave} style={{ display:'block', margin:'0 auto', background:'none', border:'none', color:C.muted, fontSize:13, cursor:'pointer', padding:'8px 0' }}>I'll add tiers later →</button>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={()=>setPhase(2)} style={{ flex:1, height:54, borderRadius:12, background:C.section, border:`1px solid ${C.border}`, color:C.icy, fontWeight:600, fontSize:16, cursor:'pointer' }}>← Back</button>
+              <button onClick={buildAndSave} style={{ flex:2, height:54, borderRadius:12, background:C.gold, color:C.bg, fontWeight:700, fontSize:17, border:'none', cursor:'pointer' }}>
+                Save {active.length} Player{active.length!==1?'s':''}
+              </button>
+            </div>
+            <button onClick={buildAndSave} style={{ display:'block', margin:'10px auto 0', background:'none', border:'none', color:C.muted, fontSize:13, cursor:'pointer' }}>Skip tiers →</button>
           </div>
         )}
       </div>
@@ -516,16 +572,16 @@ function BatchAddSheet({ open, onClose, members, onAddNew, onUpdateExisting }) {
   );
 }
 
-// ── RosterTab (main export) ────────────────────────────────────
-export function RosterTab({ players, events, onSavePlayer, onAddPlayers, onUpdatePlayers, onDeletePlayer, showToast }) {
-  const [rosterView, setRosterView] = useState('list');
-  const [search, setSearch]         = useState('');
-  const [filterRole, setFilterRole] = useState('All');
+// ── RosterTab ──────────────────────────────────────────────────
+export function RosterTab({ players, events, onSavePlayer, onAddPlayers, onUpdatePlayers, onDeletePlayer }) {
+  const [rosterView, setRosterView]   = useState('list');
+  const [search, setSearch]           = useState('');
+  const [filterRole, setFilterRole]   = useState('All');
   const [viewingPlayer, setViewingPlayer] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState(null);
-  const [sheetOpen, setSheetOpen]   = useState(false);
-  const [batchOpen, setBatchOpen]   = useState(false);
+  const [sheetOpen, setSheetOpen]     = useState(false);
+  const [batchOpen, setBatchOpen]     = useState(false);
 
   const filteredPlayers = players.filter(p => {
     const t=(p.username||p.alias||'').toLowerCase();
@@ -535,25 +591,22 @@ export function RosterTab({ players, events, onSavePlayer, onAddPlayers, onUpdat
   });
 
   function openProfile(player) { setViewingPlayer(player); setProfileOpen(true); }
-  function openEdit(player) { setEditingPlayer(player); setSheetOpen(true); }
-  function openAdd() { setEditingPlayer(null); setSheetOpen(true); }
+  function openEdit(player)    { setEditingPlayer(player); setSheetOpen(true); }
+  function openAdd()           { setEditingPlayer(null); setSheetOpen(true); }
 
   return (
     <div style={{ padding:'16px 20px 0' }}>
-      {/* Search + action row */}
       <div style={{ display:'flex', gap:8, marginBottom:12 }}>
         <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, tag, country…" style={{ flex:1, height:48, background:'#152236', border:'1px solid #2A4A64', borderRadius:10, padding:'0 14px', fontSize:16, color:'#FFFFFF', fontFamily:'inherit' }}/>
         <button onClick={()=>setBatchOpen(true)} style={{ height:48, padding:'0 12px', borderRadius:10, background:'none', border:`1px solid ${C.gold}`, color:C.gold, fontWeight:700, fontSize:14, cursor:'pointer' }}>⚡ Batch</button>
         <button onClick={openAdd} style={{ height:48, padding:'0 14px', borderRadius:10, background:C.gold, color:C.bg, fontWeight:700, fontSize:15, border:'none', cursor:'pointer' }}>＋</button>
       </div>
 
-      {/* List / By Role toggle */}
       <div style={{ display:'flex', gap:8, marginBottom:12 }}>
         <button onClick={()=>setRosterView('list')} style={{ flex:1, height:36, borderRadius:20, background:rosterView==='list'?C.gold+'22':C.section, border:`1px solid ${rosterView==='list'?C.gold:C.border}`, color:rosterView==='list'?C.gold:C.muted, fontWeight:600, fontSize:13, cursor:'pointer' }}>≡ List</button>
         <button onClick={()=>setRosterView('roles')} style={{ flex:1, height:36, borderRadius:20, background:rosterView==='roles'?C.gold+'22':C.section, border:`1px solid ${rosterView==='roles'?C.gold:C.border}`, color:rosterView==='roles'?C.gold:C.muted, fontWeight:600, fontSize:13, cursor:'pointer' }}>⚔️ By Role</button>
       </div>
 
-      {/* List view */}
       {rosterView==='list'&&(
         <>
           <div style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:10, marginBottom:4 }}>
@@ -576,7 +629,6 @@ export function RosterTab({ players, events, onSavePlayer, onAddPlayers, onUpdat
         </>
       )}
 
-      {/* By Role view */}
       {rosterView==='roles'&&(()=>{
         const avail=players.filter(p=>p.availability?.present==='available');
         const byRole=ROLES.map(role=>({role,members:avail.filter(p=>p.roles?.includes(role))})).filter(g=>g.members.length>0);
@@ -593,7 +645,7 @@ export function RosterTab({ players, events, onSavePlayer, onAddPlayers, onUpdat
                   <div key={m.id} onClick={()=>openProfile(m)} style={{ background:C.card, borderRadius:10, padding:'10px 14px', marginBottom:6, display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', WebkitTapHighlightColor:'transparent' }}>
                     <div>
                       <div style={{ fontWeight:700, color:C.white, fontSize:15 }}>{m.username||m.alias||'?'}</div>
-                      <div style={{ fontSize:12, color:C.icy }}>{[m.furnaceLevel&&`FC${m.furnaceLevel}`,m.allianceTag&&`[${m.allianceTag}]`,m.timezone].filter(Boolean).join(' · ')}{m.availability?.timing==='late'?' · 🕐':''}{m.availability?.discord==='yes'?' · 🎙️':''}</div>
+                      <div style={{ fontSize:12, color:C.icy }}>{[m.furnaceLevel&&`FC${m.furnaceLevel}`,m.allianceTag&&`[${m.allianceTag}]`].filter(Boolean).join(' · ')}{m.availability?.timing==='late'?' · 🕐':''}{m.availability?.discord==='yes'?' · 🎙️':''}</div>
                     </div>
                     <div style={{ display:'flex', gap:4 }}>
                       {[m.troops?.infantry,m.troops?.lancer,m.troops?.marksman].map((t,i)=><span key={i} style={{ fontSize:11, padding:'2px 6px', borderRadius:6, background:[C.inf,C.lan,C.mar][i]+'22', color:[C.inf,C.lan,C.mar][i] }}>{t||'?'}</span>)}
@@ -608,7 +660,7 @@ export function RosterTab({ players, events, onSavePlayer, onAddPlayers, onUpdat
       })()}
 
       <ProfileView player={viewingPlayer} open={profileOpen} onClose={()=>setProfileOpen(false)} onEdit={()=>{setProfileOpen(false);openEdit(viewingPlayer);}} events={events}/>
-      <PlayerSheet open={sheetOpen} player={editingPlayer} onClose={()=>{setSheetOpen(false);setEditingPlayer(null);}} onSave={p=>{onSavePlayer(p);}}/>
+      <PlayerSheet open={sheetOpen} player={editingPlayer} onClose={()=>{setSheetOpen(false);setEditingPlayer(null);}} onSave={onSavePlayer}/>
       <BatchAddSheet open={batchOpen} onClose={()=>setBatchOpen(false)} members={players} onAddNew={onAddPlayers} onUpdateExisting={onUpdatePlayers}/>
     </div>
   );
