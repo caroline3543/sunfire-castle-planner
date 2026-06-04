@@ -31,6 +31,7 @@ export function newPlayer(overrides = {}) {
     },
     teamAssignment:     null,
     notes:              '',
+    eventAvailability:  {},   // { "SvS Week 3": { present, timing, discord } }
     profileLastUpdated: null,
     createdAt:          Date.now(),
     eventHistory:       [],

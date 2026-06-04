@@ -5,8 +5,7 @@ import { newPlayer } from '../../data/playerSchema.js';
 import { resolveBatchRows, mergePlayerObjects } from '../../services/batchAddService.js';
 import { searchPlayers } from '../../services/playerAutosuggest.js';
 import { Inp, Sel, AvailChip, SheetHandle } from '../common/Primitives.jsx';
-
-const ALLIANCE_CHIPS = ['INT','SOV','LEO','420','WWS'];
+import { AlliancePicker } from '../common/AlliancePicker.jsx';
 
 function initials(n) {
   return (n||'?').split(/\s+/).map(w=>w[0]||'').join('').slice(0,2).toUpperCase()||'?';
@@ -151,14 +150,14 @@ export function BatchAddSheet({ open, onClose, members, onAddNew, onUpdateExisti
             <button onClick={()=>setShowOpt(!showOpt)} style={{ background:'none', border:'none', color:C.gold, fontSize:14, cursor:'pointer', padding:'4px 0', marginBottom:12 }}>{showOpt?'▾':'▸'} Apply to everyone</button>
             {showOpt&&(
               <div style={{ background:C.section, borderRadius:12, padding:16, marginBottom:16 }}>
-                <div style={{ fontSize:12, color:C.muted, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>Alliance Tag</div>
-                <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:10 }}>
-                  {ALLIANCE_CHIPS.map(chip=>(
-                    <button key={chip} onClick={()=>setTagAll(tagAll===chip?'':chip)} style={{ padding:'8px 16px', borderRadius:20, minHeight:36, border:`1px solid ${tagAll===chip?C.gold:C.border}`, background:tagAll===chip?C.gold+'22':C.card, color:tagAll===chip?C.gold:C.muted, fontWeight:700, fontSize:14, cursor:'pointer' }}>{chip}</button>
-                  ))}
-                </div>
-                <Inp value={tagAll} onChange={setTagAll} placeholder="Or type custom tag…"/>
-                {tagAll&&<div style={{ fontSize:12, color:C.green, marginTop:6 }}>✓ Will apply [{tagAll}] to all {rawLines.length} players</div>}
+                <div style={{ fontSize:12, color:C.muted, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>Alliance</div>
+                <AlliancePicker
+                  value={tagAll}
+                  onChange={setTagAll}
+                  existingTags={[...new Set(members.map(p=>p.allianceTag).filter(Boolean))]}
+                  placeholder="Or type a custom tag…"
+                />
+                {tagAll&&<div style={{ fontSize:12, color:C.green, marginTop:6 }}>✓ Will apply [{tagAll}] to all {rawLines.length} members</div>}
               </div>
             )}
             <div style={{ display:'flex', gap:10 }}>

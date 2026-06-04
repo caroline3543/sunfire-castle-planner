@@ -5,7 +5,7 @@ import { ProfileView }   from './ProfileView.jsx';
 import { PlayerSheet }   from './PlayerSheet.jsx';
 import { BatchAddSheet } from './BatchAddSheet.jsx';
 
-export function RosterTab({ players, events, onSavePlayer, onAddPlayers, onUpdatePlayers, onDeletePlayer }) {
+export function RosterTab({ players, events, onSavePlayer, onAddPlayers, onUpdatePlayers, onDeletePlayer, onGoToIntel }) {
   const [rosterView, setRosterView]       = useState('list');
   const [search, setSearch]               = useState('');
   const [filterRole, setFilterRole]       = useState('All');
@@ -154,6 +154,9 @@ export function RosterTab({ players, events, onSavePlayer, onAddPlayers, onUpdat
         player={editingPlayer}
         onClose={() => { setSheetOpen(false); setEditingPlayer(null); }}
         onSave={onSavePlayer}
+        existingTags={[...new Set(players.map(p=>p.allianceTag).filter(Boolean))]}
+        existingEvents={events.filter(e=>e.status!=='completed').slice(0,8)}
+        onGoToIntel={onGoToIntel}
       />
       <BatchAddSheet
         open={batchOpen}

@@ -37,13 +37,14 @@ export const ROLE_ICONS = {
 };
 
 export const EVENT_ICONS = {
-  'SvS':             '⚔️',
-  'Foundry':         '🔥',
-  'Canyon Clash':    '🏔️',
-  'Bear Trap':       '🪤',
-  'Sunfire Castle':  '🏰',
-  'Transfer Season': '🚀',
-  'Custom':          '📋',
+  'SvS':                      '⚔️',
+  'Foundry':                  '🔥',
+  'Canyon Clash':              '🏔️',
+  'Bear Trap':                 '🪤',
+  'SvS Castle Battle':         '🏰',
+  'Internal Sunfire Castle':   '🏯',
+  'Transfer Season':           '🚀',
+  'Custom':                    '📋',
 };
 
 export const PERF_TAGS = [
@@ -109,6 +110,10 @@ export const TEAM_ROLES = [
 ];
 
 export const EVENT_TYPES = [
-  'SvS','Foundry','Canyon Clash','Bear Trap',
-  'Sunfire Castle','Transfer Season','Custom',
+  'SvS', 'SvS Castle Battle', 'Internal Sunfire Castle',
+  'Foundry', 'Canyon Clash', 'Bear Trap',
+  'Transfer Season', 'Custom',
 ];
+
+// Event types that automatically include joiner coverage in exports
+export const JOINER_COVERAGE_EVENTS = ['SvS', 'SvS Castle Battle', 'Internal Sunfire Castle'];

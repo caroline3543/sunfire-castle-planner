@@ -5,6 +5,7 @@ import { fmtDateShort } from '../../utils/dates.js';
 import { newEvent, newSnapshot } from '../../data/playerSchema.js';
 import { Field, Inp, ToggleRow, SheetHandle } from '../common/Primitives.jsx';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal.jsx';
+import { AlliancePicker } from '../common/AlliancePicker.jsx';
 
 function initials(n) { return (n||'?').split(/\s+/).map(w=>w[0]||'').join('').slice(0,2).toUpperCase()||'?'; }
 
@@ -47,14 +48,11 @@ function EventSheet({ event, open, onClose, onSave, players }) {
           </div>
         </Field>
         <Field label="Alliance">
-          <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:8 }}>
-            {allTags.map(t => (
-              <button key={t} onClick={() => upd('allianceTag', ev.allianceTag===t?'':t)} style={{ padding:'8px 14px', borderRadius:20, minHeight:36, border:`1px solid ${ev.allianceTag===t?C.gold:C.border}`, background:ev.allianceTag===t?C.gold+'22':C.section, color:ev.allianceTag===t?C.gold:C.muted, fontWeight:600, fontSize:13, cursor:'pointer' }}>
-                [{t}]
-              </button>
-            ))}
-          </div>
-          <Inp value={ev.allianceTag} onChange={v => upd('allianceTag', v)} placeholder="Or type alliance tag…"/>
+          <AlliancePicker
+            value={ev.allianceTag}
+            onChange={v => upd('allianceTag', v)}
+            existingTags={allTags}
+          />
         </Field>
         <Field label="Event Name"><Inp value={ev.name} onChange={v => upd('name', v)} placeholder="e.g. SvS Week 3 — May 2026"/></Field>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:16 }}>
