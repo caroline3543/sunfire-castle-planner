@@ -12,12 +12,12 @@ function EntryForm({ entry, players, onSave, onCancel }) {
   const linked = players.find(p=>p.id===e.playerId||normalizeName(p.username||p.alias||'')===normalizeName(e.playerName));
   return (
     <div style={{ background:C.section, borderRadius:12, padding:16, marginBottom:12 }}>
-      <Field label="Player Name"><Inp value={e.playerName} onChange={v=>upd('playerName',v)} placeholder="Player name"/></Field>
+      <Field label="Member name"><Inp value={e.playerName} onChange={v=>upd('playerName',v)} placeholder="Player name"/></Field>
       {linked&&<div style={{ fontSize:12, color:C.green, marginBottom:10 }}>✓ Linked to roster</div>}
       <Field label="Alliance Tag"><Inp value={e.allianceTag} onChange={v=>upd('allianceTag',v)} placeholder="R3K"/></Field>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:16 }}>
-        <Field label="Prep Score"><Inp value={e.prepScore??''} onChange={v=>upd('prepScore',v?parseFloat(v):null)} placeholder="0" type="number" inputMode="decimal"/></Field>
-        <Field label="Target Score"><Inp value={e.targetScore??''} onChange={v=>upd('targetScore',v?parseFloat(v):null)} placeholder="0" type="number" inputMode="decimal"/></Field>
+        <Field label="Prep points"><Inp value={e.prepScore??''} onChange={v=>upd('prepScore',v?parseFloat(v):null)} placeholder="0" type="number" inputMode="decimal"/></Field>
+        <Field label="Points needed"><Inp value={e.targetScore??''} onChange={v=>upd('targetScore',v?parseFloat(v):null)} placeholder="0" type="number" inputMode="decimal"/></Field>
       </div>
       <Field label="Notes"><Inp value={e.notes||''} onChange={v=>upd('notes',v)} placeholder="Notes…"/></Field>
       <div style={{ display:'flex', gap:10 }}>
@@ -86,7 +86,7 @@ export function ScoresTab({ prepScores, players, onUpdate, showToast }) {
     <div style={{ padding:'16px 20px 0' }}>
       <div style={{ display:'flex', gap:8, marginBottom:12 }}>
         <button onClick={()=>{setShowAdd(!showAdd);setNewEntry(newPrepEntry());}} style={{ flex:1, height:44, borderRadius:10, background:C.gold, color:C.bg, fontWeight:700, fontSize:14, border:'none', cursor:'pointer' }}>＋ Add</button>
-        <button onClick={()=>setBatchMode(!batchMode)} style={{ flex:1, height:44, borderRadius:10, background:batchMode?C.gold+'22':C.section, border:`1px solid ${batchMode?C.gold:C.border}`, color:batchMode?C.gold:C.icy, fontWeight:700, fontSize:14, cursor:'pointer' }}>⚡ Batch</button>
+        <button onClick={()=>setBatchMode(!batchMode)} style={{ flex:1, height:44, borderRadius:10, background:batchMode?C.gold+'22':C.section, border:`1px solid ${batchMode?C.gold:C.border}`, color:batchMode?C.gold:C.icy, fontWeight:700, fontSize:14, cursor:'pointer' }}>⚡ Paste scores</button>
       </div>
 
       {batchMode&&(

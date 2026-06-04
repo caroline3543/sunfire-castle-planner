@@ -6,8 +6,6 @@ import JoinerRegistry from '../JoinerRegistry.jsx';
 
 export function IntelTab({ players, events, onUpdatePlayer, showToast }) {
   const [registryOpen, setRegistryOpen] = useState(false);
-  const [heroFilter, setHeroFilter]     = useState(null);
-  const [heroSheetOpen, setHeroSheetOpen] = useState(false);
 
   const withM = players
     .map(p=>({player:p,metrics:calcMetrics(p,events)}))
@@ -19,14 +17,20 @@ export function IntelTab({ players, events, onUpdatePlayer, showToast }) {
     .filter(x=>x.metrics&&x.metrics.consecutiveMisses>=3)
     .sort((a,b)=>b.metrics.consecutiveMisses-a.metrics.consecutiveMisses);
 
-  // Hero counts from joinerHeroes (single source of truth)
+  // Hero counts from joinerHeroes
   const heroCounts = {};
-  players.forEach(p=>(p.joinerHeroes||[]).forEach(jh=>{ if(jh.skillLevel>=5) heroCounts[jh.hero]=(heroCounts[jh.hero]||0)+1; }));
+  players.forEach(p=>(p.joinerHeroes||[]).forEach(jh=>{
+    if(jh.skillLevel>=5) heroCounts[jh.hero]=(heroCounts[jh.hero]||0)+1;
+  }));
   const topHeroes = Object.entries(heroCounts).sort((a,b)=>b[1]-a[1]).slice(0,12);
 
   const countryCounts = {};
   players.forEach(p=>{ if(p.country) countryCounts[p.country]=(countryCounts[p.country]||0)+1; });
   const topCountries = Object.entries(countryCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  const available    = players.filter(p=>p.availability?.present==='available').length;
+  const rallyLeads   = players.filter(p=>p.roles?.includes('Rally Lead')).length;
+  const withJoiners  = players.filter(p=>(p.joinerHeroes||[]).some(jh=>jh.skillLevel>=5)).length;
 
   if (registryOpen) {
     return (
@@ -42,50 +46,56 @@ export function IntelTab({ players, events, onUpdatePlayer, showToast }) {
 
   return (
     <div style={{ padding:'16px 20px' }}>
-      {/* Registry entry point — prominent */}
-      <button onClick={()=>setRegistryOpen(true)} style={{ width:'100%', height:52, borderRadius:12, background:C.section, border:`1px solid ${C.gold}44`, color:C.gold, fontWeight:700, fontSize:15, cursor:'pointer', marginBottom:16 }}>
-        🦸 Rally Joiner Registry
-      </button>
 
-      {/* Stat cards */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:16 }}>
+      {/* Summary line — replaces the 6-card grid */}
+      <div style={{ background:C.section, borderRadius:12, padding:'14px 16px', marginBottom:16, display:'flex', gap:0, flexWrap:'wrap' }}>
         {[
-          ['👥','Total Players',players.length],
-          ['📋','Total Events',events.length],
-          ['👑','Rally Leads',players.filter(p=>p.roles?.includes('Rally Lead')).length],
-          ['✅','Available',players.filter(p=>p.availability?.present==='available').length],
-          ['🦸','With Joiners',players.filter(p=>(p.joinerHeroes||[]).some(jh=>jh.skillLevel>=5)).length],
-          ['🌏','Countries',new Set(players.map(p=>p.country).filter(Boolean)).size],
-        ].map(([i,l,v])=>(
-          <div key={l} style={{ background:C.card, borderRadius:12, padding:16 }}>
-            <div style={{ fontSize:22 }}>{i}</div>
-            <div style={{ fontSize:28, fontWeight:700, color:C.gold }}>{v}</div>
-            <div style={{ fontSize:13, color:C.icy }}>{l}</div>
+          [`${players.length}`, 'members'],
+          [`${available}`, 'available'],
+          [`${rallyLeads}`, 'rally leads'],
+          [`${withJoiners}`, 'joiner heroes set'],
+        ].map(([num, label], i) => (
+          <div key={label} style={{ flex:'1 1 auto', textAlign:'center', padding:'4px 8px', borderRight: i<3 ? `1px solid ${C.border}` : 'none' }}>
+            <div style={{ fontSize:22, fontWeight:700, color:C.gold }}>{num}</div>
+            <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>{label}</div>
           </div>
         ))}
       </div>
 
-      {/* Reliability leaderboard */}
+      {/* Joiner Registry — prominent card */}
+      <button onClick={()=>setRegistryOpen(true)} style={{ width:'100%', borderRadius:12, background:C.card, border:`1px solid ${C.gold}44`, padding:'16px', marginBottom:16, cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center', gap:14 }}>
+        <span style={{ fontSize:32 }}>🦸</span>
+        <div>
+          <div style={{ fontSize:15, fontWeight:700, color:C.gold }}>Joiner Registry</div>
+          <div style={{ fontSize:13, color:C.muted, marginTop:2 }}>Track Skill 5 joiner heroes · coverage · meta formations</div>
+        </div>
+        <span style={{ marginLeft:'auto', fontSize:20, color:C.gold }}>›</span>
+      </button>
+
+      {/* Reliability leaderboard — top of data section */}
       {withM.length>0&&(
         <div style={{ background:C.card, borderRadius:12, padding:16, marginBottom:16 }}>
-          <div style={{ fontSize:15, fontWeight:700, color:C.white, marginBottom:12 }}>🏅 Reliability Leaderboard</div>
+          <div style={{ fontSize:15, fontWeight:700, color:C.white, marginBottom:12 }}>🏅 Most Reliable</div>
           {withM.slice(0,8).map(({player,metrics},i)=>(
             <div key={player.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 0', borderBottom:`1px solid ${C.border}22` }}>
-              <div style={{ fontSize:13, fontWeight:700, color:i<3?C.gold:C.muted, width:20, textAlign:'center' }}>{i+1}</div>
+              <div style={{ fontSize:13, fontWeight:700, color:i<3?C.gold:C.muted, width:22, textAlign:'center' }}>
+                {i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}
+              </div>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:14, fontWeight:700, color:C.white }}>{player.username||player.alias||'?'}</div>
-                <div style={{ fontSize:11, color:C.muted }}>{metrics.attended}/{metrics.totalEvents} · {metrics.attendancePct}%</div>
+                <div style={{ fontSize:11, color:C.muted }}>{metrics.attended}/{metrics.totalEvents} events · {metrics.attendancePct}% attendance</div>
               </div>
-              <div style={{ fontSize:16, fontWeight:700, color:metrics.reliabilityScore>=70?C.green:metrics.reliabilityScore>=40?C.gold:C.red }}>{metrics.reliabilityScore}</div>
+              <ReliabilityBadge score={metrics.reliabilityScore}/>
             </div>
           ))}
         </div>
       )}
 
-      {/* At risk */}
+      {/* Needs attention */}
       {atRisk.length>0&&(
         <div style={{ background:C.card, borderRadius:12, padding:16, marginBottom:16, border:`1px solid ${C.red}33` }}>
-          <div style={{ fontSize:15, fontWeight:700, color:C.red, marginBottom:12 }}>⚠️ Absent 3+ in a Row</div>
+          <div style={{ fontSize:15, fontWeight:700, color:C.red, marginBottom:4 }}>⚠️ Needs Attention</div>
+          <div style={{ fontSize:12, color:C.muted, marginBottom:12 }}>Absent 3 or more events in a row</div>
           {atRisk.map(({player,metrics})=>(
             <div key={player.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', borderBottom:`1px solid ${C.border}22` }}>
               <div style={{ fontSize:14, color:C.white }}>{player.username||player.alias||'?'}</div>
@@ -98,8 +108,8 @@ export function IntelTab({ players, events, onUpdatePlayer, showToast }) {
       {/* Top heroes */}
       {topHeroes.length>0&&(
         <div style={{ background:C.card, borderRadius:12, padding:16, marginBottom:16 }}>
-          <div style={{ fontSize:15, fontWeight:700, color:C.white, marginBottom:4 }}>🦸 Top Joiner Heroes (Skill 5)</div>
-          <div style={{ fontSize:12, color:C.muted, marginBottom:10 }}>From Rally Joiner Registry</div>
+          <div style={{ fontSize:15, fontWeight:700, color:C.white, marginBottom:4 }}>🦸 Joiner Heroes</div>
+          <div style={{ fontSize:12, color:C.muted, marginBottom:10 }}>Members tracked in Joiner Registry</div>
           <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
             {topHeroes.map(([hero,count])=>(
               <div key={hero} style={{ padding:'8px 12px', borderRadius:20, background:C.gold+'18', border:`1px solid ${C.gold}33` }}>
@@ -129,7 +139,9 @@ export function IntelTab({ players, events, onUpdatePlayer, showToast }) {
         </div>
       )}
 
-      {players.length===0&&<div style={{ textAlign:'center', padding:'40px 0', color:C.muted }}>Add players to see intel</div>}
+      {players.length===0&&(
+        <div style={{ textAlign:'center', padding:'40px 0', color:C.muted }}>Add members to see intel</div>
+      )}
     </div>
   );
 }

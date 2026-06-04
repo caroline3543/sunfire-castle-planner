@@ -20,11 +20,11 @@ import { DataPanel }    from './components/DataPanel.jsx';
 import { SettingsPanel } from './components/SettingsPanel.jsx';
 
 const TABS = [
-  { icon:'👥', label:'Roster' },
-  { icon:'⚔️', label:'Battle' },
-  { icon:'📋', label:'Events' },
-  { icon:'📈', label:'Scores' },
-  { icon:'📊', label:'Intel'  },
+  { icon:'👥', label:'Members' },   // 0
+  { icon:'⚔️', label:'Battle'  },   // 1
+  { icon:'📅', label:'Events'  },   // 2
+  { icon:'📊', label:'Intel'   },   // 3
+  { icon:'🎯', label:'Scores'  },   // 4
 ];
 
 const hdrBtn = { height:36, padding:'0 10px', borderRadius:20, background:'#152236', border:'1px solid #2A4A64', color:'#A8C4D8', fontSize:13, fontWeight:600, cursor:'pointer' };
@@ -70,7 +70,6 @@ export default function App() {
             <div style={{ fontSize:13, color:'#5A7A94' }}>{settings?.allianceTag ? `[${settings.allianceTag}] · ` : ''}State {settings?.stateId || '3543'} · {players.length} players</div>
           </div>
           <div style={{ display:'flex', gap:6 }}>
-            <button onClick={()=>setJoinerRegistryOpen(true)} style={hdrBtn}>🦸</button>
             <button onClick={()=>setTutorialPicker(true)} style={hdrBtn}>📖</button>
             <button onClick={()=>setDataPanel(true)} style={hdrBtn}>📦</button>
             <button onClick={()=>setSettingsPanel(true)} style={hdrBtn}>⚙️</button>
@@ -81,8 +80,8 @@ export default function App() {
       {tab===0 && <TabErrorBoundary><RosterTab players={players} events={events} onSavePlayer={savePlayer} onAddPlayers={addPlayers} onUpdatePlayers={updatePlayers} onDeletePlayer={id=>setDeleteTarget(id)} showToast={showToast} /></TabErrorBoundary>}
       {tab===1 && <TabErrorBoundary><BattleTab plans={svsPlans} players={players} events={events} onSave={saveSvsPlans} onDelete={deleteSvsPlan} showToast={showToast} /></TabErrorBoundary>}
       {tab===2 && <TabErrorBoundary><EventsTab events={events} players={players} onCreateEvent={createEvent} onUpdateEvent={updateEvent} onDeleteEvent={deleteEvent} showToast={showToast} /></TabErrorBoundary>}
-      {tab===3 && <TabErrorBoundary><ScoresTab prepScores={prepScores} players={players} onUpdate={updatePrepScores} showToast={showToast} /></TabErrorBoundary>}
-      {tab===4 && <TabErrorBoundary><IntelTab players={players} events={events} onUpdatePlayer={savePlayer} showToast={showToast} /></TabErrorBoundary>}
+      {tab===3 && <TabErrorBoundary><IntelTab players={players} events={events} onUpdatePlayer={savePlayer} showToast={showToast} /></TabErrorBoundary>}
+      {tab===4 && <TabErrorBoundary><ScoresTab prepScores={prepScores} players={players} onUpdate={updatePrepScores} showToast={showToast} /></TabErrorBoundary>}
 
       {deleteTarget && <DeleteConfirmModal message="This player will be permanently removed." onConfirm={()=>{deletePlayer(deleteTarget);setDeleteTarget(null);}} onCancel={()=>setDeleteTarget(null)} />}
       {dataPanel    && <DataPanel data={data} onImport={applyImport} onExport={()=>exportToFile(data,settings?.allianceTag)} onClose={()=>setDataPanel(false)} showToast={showToast} />}

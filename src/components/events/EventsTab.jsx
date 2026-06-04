@@ -61,7 +61,7 @@ function EventSheet({ event, open, onClose, onSave, players }) {
           <Field label="Date"><Inp type="date" value={ev.date} onChange={v => upd('date', v)}/></Field>
           <Field label="Time"><Inp type="time" value={ev.time||'12:00'} onChange={v => upd('time', v)}/></Field>
         </div>
-        <Field label="Participating Players" hint="Select who's in this event">
+        <Field label="Who's in this event?" hint="Tap to select who's participating">
           <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
             {players.map(p => {
               const sel = (ev.participantIds||[]).includes(p.id);
@@ -131,11 +131,11 @@ function SnapshotEditor({ snapshot, playerName, open, onClose, onSave }) {
         </div>
         <div style={{ background:C.section, borderRadius:12, padding:16, marginBottom:16 }}>
           <div style={{ fontSize:14, fontWeight:700, color:C.white, marginBottom:12 }}>📅 Attendance</div>
-          <ToggleRow label="Attended"      value={s.attendance?.attended}    onChange={v=>updA({attended:v})}    tristate={true}/>
+          <ToggleRow label="Showed up"      value={s.attendance?.attended}    onChange={v=>updA({attended:v})}    tristate={true}/>
           <ToggleRow label="Late"          value={s.attendance?.late}        onChange={v=>updA({late:v})}        colorOn={C.gold} colorOff={C.muted}/>
           <ToggleRow label="Left Early"    value={s.attendance?.leftEarly}   onChange={v=>updA({leftEarly:v})}   colorOn={C.mar}  colorOff={C.muted}/>
           <ToggleRow label="No-show"       value={s.attendance?.noShow}      onChange={v=>updA({noShow:v})}      colorOn={C.red}  colorOff={C.muted}/>
-          <ToggleRow label="Stayed full"   value={s.attendance?.stayedFull}  onChange={v=>updA({stayedFull:v})}/>
+          <ToggleRow label="Stayed the whole battle"   value={s.attendance?.stayedFull}  onChange={v=>updA({stayedFull:v})}/>
           <ToggleRow label="Prep phase"    value={s.attendance?.prepPhase}   onChange={v=>updA({prepPhase:v})}/>
           <ToggleRow label="Battle phase"  value={s.attendance?.battlePhase} onChange={v=>updA({battlePhase:v})}/>
         </div>
@@ -151,8 +151,8 @@ function SnapshotEditor({ snapshot, playerName, open, onClose, onSave }) {
           <ToggleRow label="Joined rallies"      value={s.combat?.joinedRallies}      onChange={v=>updC({joinedRallies:v})}/>
           <ToggleRow label="Led rallies"         value={s.combat?.ledRallies}         onChange={v=>updC({ledRallies:v})}         colorOn={C.gold} colorOff={C.muted}/>
           <ToggleRow label="Defended structures" value={s.combat?.defendedStructures} onChange={v=>updC({defendedStructures:v})}/>
-          <ToggleRow label="Followed orders"     value={s.combat?.followedOrders}     onChange={v=>updC({followedOrders:v})}     tristate={true}/>
-          <ToggleRow label="Went rogue ⚠️"       value={s.combat?.wentRogue}          onChange={v=>updC({wentRogue:v})}         colorOn={C.red} colorOff={C.muted}/>
+          <ToggleRow label="Followed the plan"     value={s.combat?.followedOrders}     onChange={v=>updC({followedOrders:v})}     tristate={true}/>
+          <ToggleRow label="Ignored orders ⚠️"       value={s.combat?.wentRogue}          onChange={v=>updC({wentRogue:v})}         colorOn={C.red} colorOff={C.muted}/>
         </div>
         <div style={{ marginBottom:20 }}>
           <label style={{ fontSize:12, color:C.muted, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', display:'block', marginBottom:8 }}>Officer Notes</label>
@@ -250,11 +250,11 @@ export function EventsTab({ events, players, onCreateEvent, onUpdateEvent, onDel
                 </button>
               </div>
             </div>
-            {(() => { const s=evSum(activeEvent); return s.total>0 ? <div style={{ display:'flex', gap:12 }}><span style={{ fontSize:13, color:C.green }}>✓ {s.attended}</span><span style={{ fontSize:13, color:C.red }}>✗ {s.noShow}</span><span style={{ fontSize:13, color:C.icy }}>🎙️ {s.voice}</span></div> : <div style={{ fontSize:13, color:C.muted }}>No records yet</div>; })()}
+            {(() => { const s=evSum(activeEvent); return s.total>0 ? <div style={{ display:'flex', gap:12 }}><span style={{ fontSize:13, color:C.green }}>✓ {s.attended}</span><span style={{ fontSize:13, color:C.red }}>✗ {s.noShow}</span><span style={{ fontSize:13, color:C.icy }}>🎙️ {s.voice}</span></div> : <div style={{ fontSize:13, color:C.muted }}>Tap a player to record their attendance</div>; })()}
           </div>
           <div style={{ display:'flex', gap:8, marginBottom:16, overflowX:'auto' }}>
             <button onClick={() => { setBulkMode(!bulkMode); setBulkSel(new Set()); }} style={{ height:36, padding:'0 14px', borderRadius:20, background:bulkMode?C.gold+'22':C.section, border:`1px solid ${bulkMode?C.gold:C.border}`, color:bulkMode?C.gold:C.muted, fontWeight:600, fontSize:13, cursor:'pointer', whiteSpace:'nowrap' }}>
-              {bulkMode ? `✓ ${bulkSel.size} selected` : '⚡ Bulk Edit'}
+              {bulkMode ? `✓ ${bulkSel.size} selected` : '⚡ Update multiple'}
             </button>
             {bulkMode && bulkSel.size>0 && [['✓ Attended','attended',C.green],['✗ No-show','noshow',C.red],['🕐 Late','late',C.gold],['🎙️ Voice','voice',C.icy]].map(([l,t,c]) => (
               <button key={t} onClick={() => applyBulk(t)} style={{ height:36, padding:'0 12px', borderRadius:20, background:c+'18', border:`1px solid ${c}44`, color:c, fontWeight:600, fontSize:13, cursor:'pointer', whiteSpace:'nowrap' }}>{l}</button>

@@ -130,7 +130,7 @@ export function BatchAddSheet({ open, onClose, members, onAddNew, onUpdateExisti
             )}
             <div style={{ position:'relative', marginBottom:12 }}>
               <div style={{ display:'flex', gap:8 }}>
-                <input value={inputText} onChange={e=>{setInputText(e.target.value);updateSuggestions(e.target.value);}} onKeyDown={e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();addLine(inputText);}}} placeholder="Type name, press Enter…" style={{ flex:1, background:C.section, border:`1px solid ${C.border}`, borderRadius:10, padding:'12px 14px', fontSize:16, color:C.white, fontFamily:'inherit' }}/>
+                <input value={inputText} onChange={e=>{setInputText(e.target.value);updateSuggestions(e.target.value);}} onKeyDown={e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();addLine(inputText);}}} placeholder="Type a name, press Enter to add…" style={{ flex:1, background:C.section, border:`1px solid ${C.border}`, borderRadius:10, padding:'12px 14px', fontSize:16, color:C.white, fontFamily:'inherit' }}/>
                 <button onClick={()=>addLine(inputText)} disabled={!inputText.trim()} style={{ height:48, padding:'0 16px', borderRadius:10, background:inputText.trim()?C.gold:C.border, color:C.bg, fontWeight:700, fontSize:14, border:'none', cursor:inputText.trim()?'pointer':'default' }}>Add</button>
               </div>
               {suggestions.length>0&&(
@@ -148,7 +148,7 @@ export function BatchAddSheet({ open, onClose, members, onAddNew, onUpdateExisti
               )}
             </div>
             {rawLines.length>0&&<div style={{ fontSize:13, color:C.icy, marginBottom:12 }}><span style={{ color:C.white, fontWeight:600 }}>{rawLines.length}</span> entries · <span style={{ color:C.gold }}>{rawLines.filter(l=>l.linkedId).length} linked</span></div>}
-            <button onClick={()=>setShowOpt(!showOpt)} style={{ background:'none', border:'none', color:C.gold, fontSize:14, cursor:'pointer', padding:'4px 0', marginBottom:12 }}>{showOpt?'▾':'▸'} Set for all (optional)</button>
+            <button onClick={()=>setShowOpt(!showOpt)} style={{ background:'none', border:'none', color:C.gold, fontSize:14, cursor:'pointer', padding:'4px 0', marginBottom:12 }}>{showOpt?'▾':'▸'} Apply to everyone</button>
             {showOpt&&(
               <div style={{ background:C.section, borderRadius:12, padding:16, marginBottom:16 }}>
                 <div style={{ fontSize:12, color:C.muted, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>Alliance Tag</div>
@@ -164,7 +164,7 @@ export function BatchAddSheet({ open, onClose, members, onAddNew, onUpdateExisti
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={handleClose} style={{ flex:1, height:54, borderRadius:12, background:C.section, border:`1px solid ${C.border}`, color:C.icy, fontWeight:600, fontSize:16, cursor:'pointer' }}>Cancel</button>
               <button disabled={rawLines.length===0} onClick={resolve} style={{ flex:2, height:54, borderRadius:12, background:rawLines.length>0?C.gold:C.border, color:C.bg, fontWeight:700, fontSize:17, border:'none', cursor:rawLines.length>0?'pointer':'default' }}>
-                Continue with {rawLines.length} →
+                Next →
               </button>
             </div>
           </div>

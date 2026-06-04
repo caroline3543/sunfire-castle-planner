@@ -47,10 +47,10 @@ function PlanCreateSheet({ open, onClose, onSave }) {
             {STRATEGY_TYPES.map(s=><button key={s} onClick={()=>setStrategy(s)} style={{ padding:'10px 14px', borderRadius:12, border:`1px solid ${strategy===s?C.gold:C.border}`, background:strategy===s?C.gold+'18':C.section, color:strategy===s?C.gold:C.muted, fontWeight:600, fontSize:13, cursor:'pointer', textAlign:'left' }}>{s}</button>)}
           </div>
         </Field>
-        <Field label="Plan Name (optional)"><Inp value={name} onChange={setName} placeholder={strategy}/></Field>
+        <Field label="Name (optional)"><Inp value={name} onChange={setName} placeholder={strategy}/></Field>
         <Field label="Alliance Tag"><Inp value={allianceTag} onChange={setTag} placeholder="R3K"/></Field>
         <Field label="Date"><Inp type="date" value={date} onChange={setDate}/></Field>
-        <Field label="Target Impact Time (HH:MM:SS)" hint="When your rallies should hit"><Inp value={target} onChange={setTarget} placeholder="12:00:00"/></Field>
+        <Field label="Target hit time" hint="When your rallies should hit"><Inp value={target} onChange={setTarget} placeholder="12:00:00"/></Field>
         <button onClick={save} style={{ width:'100%', height:54, borderRadius:12, background:C.gold, color:C.bg, fontWeight:700, fontSize:17, border:'none', cursor:'pointer' }}>Create Plan</button>
       </div>
     </div>
@@ -89,10 +89,10 @@ function RallyRow({ rally, planTarget, onUpdate, onDelete }) {
       {open&&(
         <div style={{ marginTop:14, borderTop:`1px solid ${C.border}`, paddingTop:14 }}>
           <Field label="Label"><Inp value={rally.label} onChange={v=>upd('label',v)} placeholder={`Rally ${rally.order}`}/></Field>
-          <Field label="Lead Player Name"><Inp value={rally.leadName} onChange={v=>upd('leadName',v)} placeholder="Player name"/></Field>
+          <Field label="Rally leader"><Inp value={rally.leadName} onChange={v=>upd('leadName',v)} placeholder="Player name"/></Field>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-            <Field label="Launch Time (HH:MM:SS)"><Inp value={rally.launchTime} onChange={v=>upd('launchTime',v)} placeholder="11:59:20"/></Field>
-            <Field label="March Duration (s)"><Inp value={rally.marchDuration||''} onChange={v=>upd('marchDuration',parseInt(v)||0)} inputMode="numeric" placeholder="40"/></Field>
+            <Field label="Launch time"><Inp value={rally.launchTime} onChange={v=>upd('launchTime',v)} placeholder="11:59:20"/></Field>
+            <Field label="March time (seconds)"><Inp value={rally.marchDuration||''} onChange={v=>upd('marchDuration',parseInt(v)||0)} inputMode="numeric" placeholder="40"/></Field>
           </div>
           {rally.impactTime&&<div style={{ fontSize:13, color:C.gold, marginBottom:12, fontWeight:600 }}>Impact: {rally.impactTime}</div>}
           <div style={{ display:'flex', gap:8, marginBottom:12 }}>
@@ -143,8 +143,8 @@ function ReinfRow({ reinf, onUpdate, onDelete }) {
         <div style={{ marginTop:14, borderTop:`1px solid ${C.border}`, paddingTop:14 }}>
           <Field label="Player Name"><Inp value={reinf.playerName} onChange={v=>upd('playerName',v)} placeholder="Player name"/></Field>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-            <Field label="Target Arrival (HH:MM:SS)"><Inp value={reinf.targetArrivalTime} onChange={v=>upd('targetArrivalTime',v)} placeholder="12:00:00"/></Field>
-            <Field label="March Duration (s)"><Inp value={reinf.marchDuration||''} onChange={v=>upd('marchDuration',parseInt(v)||0)} inputMode="numeric" placeholder="40"/></Field>
+            <Field label="Target arrival time"><Inp value={reinf.targetArrivalTime} onChange={v=>upd('targetArrivalTime',v)} placeholder="12:00:00"/></Field>
+            <Field label="March time (seconds)"><Inp value={reinf.marchDuration||''} onChange={v=>upd('marchDuration',parseInt(v)||0)} inputMode="numeric" placeholder="40"/></Field>
           </div>
           {reinf.sendTime&&<div style={{ fontSize:13, color:C.green, marginBottom:12, fontWeight:600 }}>Send at: {reinf.sendTime}</div>}
           <Field label="Status">
@@ -227,11 +227,11 @@ function PlanDetail({ plan, players, onUpdate, onBack }) {
       )}
       {subTab==='notes'&&(
         <div>
-          <Field label="Battle Notes">
+          <Field label="Notes">
             <textarea value={plan.notes||''} onChange={e=>updPlan({notes:e.target.value})} placeholder="Pre-battle notes, target info, strategy details…" style={{ width:'100%', minHeight:120, background:C.section, border:`1px solid ${C.border}`, borderRadius:10, padding:'12px 14px', fontSize:16, color:C.white, resize:'none', boxSizing:'border-box', fontFamily:'inherit' }}/>
           </Field>
           {plan.status==='completed'&&(
-            <Field label="Post-Battle Notes">
+            <Field label="Post-battle notes">
               <textarea value={plan.postBattleNotes||''} onChange={e=>updPlan({postBattleNotes:e.target.value})} placeholder="What happened? What worked? What didn't?" style={{ width:'100%', minHeight:100, background:C.section, border:`1px solid ${C.border}`, borderRadius:10, padding:'12px 14px', fontSize:16, color:C.white, resize:'none', boxSizing:'border-box', fontFamily:'inherit' }}/>
             </Field>
           )}
