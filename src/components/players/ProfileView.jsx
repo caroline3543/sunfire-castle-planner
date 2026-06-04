@@ -61,7 +61,7 @@ export function ProfileView({ player, open, onClose, onEdit, events }) {
               {player.alias&&player.username&&<div style={{ fontSize:13, color:C.muted }}>{player.alias}</div>}
               <div style={{ display:'flex', gap:8, marginTop:4, flexWrap:'wrap', alignItems:'center' }}>
                 {player.allianceTag&&<span style={{ fontSize:12, color:C.icy, fontWeight:600 }}>[{player.allianceTag}]</span>}
-                {player.furnaceLevel&&<span style={{ fontSize:12, color:C.gold, fontWeight:700 }}>FC{player.furnaceLevel}</span>}
+                {player.furnaceLevel&&<span style={{ fontSize:12, color:C.gold, fontWeight:700 }}>{player.furnaceLevel}</span>}
                 {metrics&&<ReliabilityBadge score={metrics.reliabilityScore}/>}
               </div>
             </div>

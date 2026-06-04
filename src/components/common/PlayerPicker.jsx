@@ -78,7 +78,7 @@ function SelectedChip({ player, onClear }) {
         <div style={{ fontSize:11, color:C.muted }}>
           {[
             player.allianceTag && `[${player.allianceTag}]`,
-            player.furnaceLevel && `FC${player.furnaceLevel}`,
+            player.furnaceLevel,
             player.availability?.discord === 'yes' && '🎙️',
           ].filter(Boolean).join(' · ')}
         </div>
@@ -133,7 +133,7 @@ function PlayerRow({ player, onSelect }) {
         <div style={{ fontSize:11, color:C.muted }}>
           {[
             player.allianceTag && `[${player.allianceTag}]`,
-            player.furnaceLevel && `FC${player.furnaceLevel}`,
+            player.furnaceLevel,
             player.availability?.discord === 'yes' && '🎙️',
           ].filter(Boolean).join(' · ')}
         </div>

@@ -40,7 +40,7 @@ export function PlayerCard({ player, onClick, onDelete, events }) {
         {/* Row 2 — alliance · furnace · reliability */}
         <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
           {player.allianceTag && <span style={{ fontSize:12, color:C.icy, fontWeight:600 }}>[{player.allianceTag}]</span>}
-          {player.furnaceLevel && <span style={{ fontSize:12, color:C.gold, fontWeight:700 }}>FC{player.furnaceLevel}</span>}
+          {player.furnaceLevel && <span style={{ fontSize:12, color:C.gold, fontWeight:700 }}>{player.furnaceLevel}</span>}
           {player.country && <span style={{ fontSize:12, color:C.muted }}>{player.country}</span>}
           {metrics && (
             <span style={{ fontSize:11, fontWeight:700, marginLeft:'auto', color:metrics.reliabilityScore>=70?C.green:metrics.reliabilityScore>=40?C.gold:C.red }}>

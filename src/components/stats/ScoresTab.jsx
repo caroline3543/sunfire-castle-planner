@@ -137,12 +137,12 @@ export function ScoresTab({ prepScores, players, onUpdate, showToast }) {
             {pct!=null&&(
               <div style={{ marginBottom:8 }}>
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
-                  <span style={{ fontSize:12, color:pct>=100?C.green:pct>=70?C.gold:C.red, fontWeight:600 }}>{pct}%</span>
+                  <span style={{ fontSize:12, color:pct>=100?C.green:pct>=50?C.green:C.gold, fontWeight:600 }}>{pct}%</span>
                   {diff!=null&&diff>0&&<span style={{ fontSize:12, color:C.muted }}>−{numFmt(diff)} to go</span>}
                   {diff!=null&&diff<=0&&<span style={{ fontSize:12, color:C.green, fontWeight:700 }}>✓ Target reached</span>}
                 </div>
                 <div style={{ height:6, borderRadius:3, background:C.border, overflow:'hidden' }}>
-                  <div style={{ width:`${pct}%`, height:'100%', borderRadius:3, background:pct>=100?C.green:pct>=70?C.gold:C.red, transition:'width 300ms ease' }}/>
+                  <div style={{ width:`${pct}%`, height:'100%', borderRadius:3, background:pct>=100?C.green:pct>=50?C.green:C.gold, transition:'width 300ms ease' }}/>
                 </div>
               </div>
             )}

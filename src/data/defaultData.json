@@ -1,24 +1,25 @@
 {
   "_version": "3.1.0",
-  "_exported": null,
-  "_note": "Paste an export here to hardcode your roster as seed data.",
+  "_note": "Demo data \u2014 replace with your own alliance by importing a JSON export.",
+  "lastUpdated": null,
   "settings": {
-    "allianceName": "",
-    "allianceTag": "",
-    "stateId": "3543",
-    "lastUpdated": null
+    "allianceName": "Sunfire Command",
+    "allianceTag": "INT",
+    "stateId": "3543"
   },
   "players": [
     {
-      "id": "l796erqwztmpy0vwhd",
-      "fid": "",
+      "id": "demo-p1",
+      "fid": "10023451",
       "username": "Caroline",
-      "alias": "",
+      "alias": "C",
       "allianceTag": "INT",
       "country": "New Zealand",
-      "timezone": "",
-      "languages": ["English"],
-      "furnaceLevel": null,
+      "timezone": "Oceania",
+      "languages": [
+        "English"
+      ],
+      "furnaceLevel": "FC3",
       "infantryCampLevel": null,
       "lancerCampLevel": null,
       "marksmanCampLevel": null,
@@ -28,28 +29,762 @@
         "marksman": "FC3"
       },
       "joinerHeroes": [
-        { "hero": "Jessie", "skillLevel": 5, "verified": true, "updatedAt": "2026-06-03T12:09:30.085Z" },
-        { "hero": "Mia", "skillLevel": 5, "verified": true, "updatedAt": "2026-06-03T12:09:55.425Z" },
-        { "hero": "Patrick", "skillLevel": 5, "verified": true, "updatedAt": "2026-06-03T12:10:18.399Z" },
-        { "hero": "Jasser", "skillLevel": 5, "verified": true, "updatedAt": "2026-06-03T12:10:42.967Z" }
+        {
+          "hero": "Patrick",
+          "skillLevel": 5,
+          "verified": true,
+          "updatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "hero": "Mia",
+          "skillLevel": 5,
+          "verified": true,
+          "updatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "hero": "Jessie",
+          "skillLevel": 5,
+          "verified": true,
+          "updatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "hero": "Jasser",
+          "skillLevel": 5,
+          "verified": true,
+          "updatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "hero": "Sergey",
+          "skillLevel": 5,
+          "verified": true,
+          "updatedAt": "2026-01-01T00:00:00Z"
+        }
       ],
-      "roles": ["Joiner"],
+      "roles": [
+        "Rally Lead",
+        "Attack Team"
+      ],
       "availability": {
         "present": "available",
-        "timing": "early",
+        "timing": "on-time",
         "lateBy": null,
         "earlyBy": null,
         "discord": "yes"
       },
-      "teamAssignment": null,
+      "notes": "Alliance officer. Main rally lead.",
+      "profileLastUpdated": "2026-05-01T10:00:00Z",
+      "createdAt": 1700000000000,
+      "eventHistory": []
+    },
+    {
+      "id": "demo-p2",
+      "fid": "10023452",
+      "username": "Marcus",
+      "alias": "",
+      "allianceTag": "INT",
+      "country": "United States",
+      "timezone": "Eastern North America",
+      "languages": [
+        "English"
+      ],
+      "furnaceLevel": "FC5",
+      "infantryCampLevel": null,
+      "lancerCampLevel": null,
+      "marksmanCampLevel": null,
+      "troops": {
+        "infantry": "FC5",
+        "lancer": "FC4",
+        "marksman": "FC4"
+      },
+      "joinerHeroes": [
+        {
+          "hero": "Norah",
+          "skillLevel": 5,
+          "verified": true,
+          "updatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "hero": "Patrick",
+          "skillLevel": 5,
+          "verified": true,
+          "updatedAt": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "roles": [
+        "Rally Lead"
+      ],
+      "availability": {
+        "present": "available",
+        "timing": "on-time",
+        "lateBy": null,
+        "earlyBy": null,
+        "discord": "yes"
+      },
+      "notes": "FC5 \u2014 strongest rally lead in the alliance.",
+      "profileLastUpdated": "2026-05-01T10:00:00Z",
+      "createdAt": 1700000001000,
+      "eventHistory": []
+    },
+    {
+      "id": "demo-p3",
+      "fid": "10023453",
+      "username": "ZhangWei",
+      "alias": "Wei",
+      "allianceTag": "INT",
+      "country": "China",
+      "timezone": "East Asia",
+      "languages": [
+        "Mandarin"
+      ],
+      "furnaceLevel": "FC3",
+      "infantryCampLevel": null,
+      "lancerCampLevel": null,
+      "marksmanCampLevel": null,
+      "troops": {
+        "infantry": "FC3",
+        "lancer": "FC3",
+        "marksman": "T10"
+      },
+      "joinerHeroes": [
+        {
+          "hero": "Mia",
+          "skillLevel": 5,
+          "verified": true,
+          "updatedAt": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "roles": [
+        "Joiner"
+      ],
+      "availability": {
+        "present": "available",
+        "timing": "late",
+        "lateBy": "30 min",
+        "earlyBy": null,
+        "discord": "unknown"
+      },
+      "notes": "Arrives late most SvS \u2014 account for in joiner slot timing.",
+      "profileLastUpdated": "2026-05-01T10:00:00Z",
+      "createdAt": 1700000002000,
+      "eventHistory": []
+    },
+    {
+      "id": "demo-p4",
+      "fid": "10023454",
+      "username": "Kira",
+      "alias": "",
+      "allianceTag": "INT",
+      "country": "Germany",
+      "timezone": "Central Europe",
+      "languages": [
+        "German",
+        "English"
+      ],
+      "furnaceLevel": "FC4",
+      "infantryCampLevel": null,
+      "lancerCampLevel": null,
+      "marksmanCampLevel": null,
+      "troops": {
+        "infantry": "FC4",
+        "lancer": "FC3",
+        "marksman": "FC3"
+      },
+      "joinerHeroes": [
+        {
+          "hero": "Jessie",
+          "skillLevel": 5,
+          "verified": true,
+          "updatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "hero": "Reina",
+          "skillLevel": 5,
+          "verified": true,
+          "updatedAt": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "roles": [
+        "Attack Team",
+        "Joiner"
+      ],
+      "availability": {
+        "present": "available",
+        "timing": "on-time",
+        "lateBy": null,
+        "earlyBy": null,
+        "discord": "yes"
+      },
       "notes": "",
-      "profileLastUpdated": "2026-06-03T12:10:42.967Z",
-      "createdAt": 1780488506929,
+      "profileLastUpdated": "2026-05-01T10:00:00Z",
+      "createdAt": 1700000003000,
+      "eventHistory": []
+    },
+    {
+      "id": "demo-p5",
+      "fid": "10023455",
+      "username": "RamiAl",
+      "alias": "Rami",
+      "allianceTag": "INT",
+      "country": "Saudi Arabia",
+      "timezone": "Middle East",
+      "languages": [
+        "Arabic"
+      ],
+      "furnaceLevel": "FC3",
+      "infantryCampLevel": null,
+      "lancerCampLevel": null,
+      "marksmanCampLevel": null,
+      "troops": {
+        "infantry": "FC3",
+        "lancer": "T10",
+        "marksman": "FC3"
+      },
+      "joinerHeroes": [],
+      "roles": [
+        "Garrison"
+      ],
+      "availability": {
+        "present": "available",
+        "timing": "on-time",
+        "lateBy": null,
+        "earlyBy": null,
+        "discord": "no"
+      },
+      "notes": "Garrison specialist. Not on Discord.",
+      "profileLastUpdated": "2026-05-01T10:00:00Z",
+      "createdAt": 1700000004000,
+      "eventHistory": []
+    },
+    {
+      "id": "demo-p6",
+      "fid": "10023456",
+      "username": "Yuki",
+      "alias": "",
+      "allianceTag": "INT",
+      "country": "Japan",
+      "timezone": "East Asia",
+      "languages": [
+        "Japanese"
+      ],
+      "furnaceLevel": "FC2",
+      "infantryCampLevel": null,
+      "lancerCampLevel": null,
+      "marksmanCampLevel": null,
+      "troops": {
+        "infantry": "FC2",
+        "lancer": "FC2",
+        "marksman": "T10"
+      },
+      "joinerHeroes": [
+        {
+          "hero": "Seo-Yoon",
+          "skillLevel": 5,
+          "verified": true,
+          "updatedAt": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "roles": [
+        "Joiner",
+        "Reserve"
+      ],
+      "availability": {
+        "present": "unavailable",
+        "timing": "unknown",
+        "lateBy": null,
+        "earlyBy": null,
+        "discord": "unknown"
+      },
+      "notes": "Unavailable this SvS.",
+      "profileLastUpdated": "2026-05-01T10:00:00Z",
+      "createdAt": 1700000005000,
+      "eventHistory": []
+    },
+    {
+      "id": "demo-p7",
+      "fid": "10023457",
+      "username": "TamaraBR",
+      "alias": "Tamara",
+      "allianceTag": "INT",
+      "country": "Brazil",
+      "timezone": "South America (East)",
+      "languages": [
+        "Portuguese"
+      ],
+      "furnaceLevel": "FC3",
+      "infantryCampLevel": null,
+      "lancerCampLevel": null,
+      "marksmanCampLevel": null,
+      "troops": {
+        "infantry": "FC3",
+        "lancer": "FC2",
+        "marksman": "FC3"
+      },
+      "joinerHeroes": [
+        {
+          "hero": "Patrick",
+          "skillLevel": 5,
+          "verified": true,
+          "updatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "hero": "Norah",
+          "skillLevel": 5,
+          "verified": true,
+          "updatedAt": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "roles": [
+        "Joiner",
+        "Flexible"
+      ],
+      "availability": {
+        "present": "available",
+        "timing": "on-time",
+        "lateBy": null,
+        "earlyBy": null,
+        "discord": "yes"
+      },
+      "notes": "",
+      "profileLastUpdated": "2026-05-01T10:00:00Z",
+      "createdAt": 1700000006000,
+      "eventHistory": []
+    },
+    {
+      "id": "demo-p8",
+      "fid": "10023458",
+      "username": "OkonkwoJ",
+      "alias": "Jide",
+      "allianceTag": "INT",
+      "country": "Nigeria",
+      "timezone": "West Africa",
+      "languages": [
+        "English"
+      ],
+      "furnaceLevel": "FC4",
+      "infantryCampLevel": null,
+      "lancerCampLevel": null,
+      "marksmanCampLevel": null,
+      "troops": {
+        "infantry": "FC4",
+        "lancer": "FC4",
+        "marksman": "FC3"
+      },
+      "joinerHeroes": [
+        {
+          "hero": "Mia",
+          "skillLevel": 5,
+          "verified": true,
+          "updatedAt": "2026-01-01T00:00:00Z"
+        },
+        {
+          "hero": "Logan",
+          "skillLevel": 5,
+          "verified": true,
+          "updatedAt": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "roles": [
+        "Attack Team",
+        "Joiner"
+      ],
+      "availability": {
+        "present": "available",
+        "timing": "on-time",
+        "lateBy": null,
+        "earlyBy": null,
+        "discord": "yes"
+      },
+      "notes": "",
+      "profileLastUpdated": "2026-05-01T10:00:00Z",
+      "createdAt": 1700000007000,
       "eventHistory": []
     }
   ],
-  "events": [],
-  "prepScores": [],
-  "svsPlans": [],
-  "lastUpdated": "2026-06-03T12:10:42.967Z"
+  "events": [
+    {
+      "id": "demo-e1",
+      "type": "SvS",
+      "name": "SvS Week 1 \u2014 Demo",
+      "allianceTag": "INT",
+      "date": "2026-05-10",
+      "time": "12:00",
+      "status": "completed",
+      "participantIds": [
+        "demo-p1",
+        "demo-p2",
+        "demo-p3",
+        "demo-p4",
+        "demo-p5",
+        "demo-p7",
+        "demo-p8"
+      ],
+      "notes": "First SvS of the season. Strong performance overall.",
+      "createdAt": "2026-05-10T10:00:00Z",
+      "snapshots": [
+        {
+          "snapshotId": "demo-s1",
+          "eventId": "demo-e1",
+          "playerId": "demo-p1",
+          "createdAt": "2026-05-10T12:30:00Z",
+          "profileSnapshot": {},
+          "attendance": {
+            "attended": true,
+            "late": false,
+            "leftEarly": false,
+            "noShow": false,
+            "stayedFull": true,
+            "prepPhase": true,
+            "battlePhase": true
+          },
+          "voice": {
+            "joined": true,
+            "onTime": true,
+            "leftEarly": false,
+            "joinedLate": false
+          },
+          "combat": {
+            "joinedRallies": true,
+            "ledRallies": true,
+            "defendedStructures": false,
+            "followedOrders": true,
+            "wentRogue": false
+          },
+          "notes": "",
+          "performanceTag": "strong"
+        },
+        {
+          "snapshotId": "demo-s2",
+          "eventId": "demo-e1",
+          "playerId": "demo-p2",
+          "createdAt": "2026-05-10T12:30:00Z",
+          "profileSnapshot": {},
+          "attendance": {
+            "attended": true,
+            "late": false,
+            "leftEarly": false,
+            "noShow": false,
+            "stayedFull": true,
+            "prepPhase": true,
+            "battlePhase": true
+          },
+          "voice": {
+            "joined": true,
+            "onTime": true,
+            "leftEarly": false,
+            "joinedLate": false
+          },
+          "combat": {
+            "joinedRallies": true,
+            "ledRallies": true,
+            "defendedStructures": false,
+            "followedOrders": true,
+            "wentRogue": false
+          },
+          "notes": "",
+          "performanceTag": "strong"
+        },
+        {
+          "snapshotId": "demo-s3",
+          "eventId": "demo-e1",
+          "playerId": "demo-p3",
+          "createdAt": "2026-05-10T12:30:00Z",
+          "profileSnapshot": {},
+          "attendance": {
+            "attended": true,
+            "late": true,
+            "leftEarly": false,
+            "noShow": false,
+            "stayedFull": false,
+            "prepPhase": false,
+            "battlePhase": true
+          },
+          "voice": {
+            "joined": false,
+            "onTime": false,
+            "leftEarly": false,
+            "joinedLate": false
+          },
+          "combat": {
+            "joinedRallies": true,
+            "ledRallies": false,
+            "defendedStructures": false,
+            "followedOrders": true,
+            "wentRogue": false
+          },
+          "notes": "Arrived 25 min late as expected.",
+          "performanceTag": "reliable"
+        },
+        {
+          "snapshotId": "demo-s4",
+          "eventId": "demo-e1",
+          "playerId": "demo-p4",
+          "createdAt": "2026-05-10T12:30:00Z",
+          "profileSnapshot": {},
+          "attendance": {
+            "attended": true,
+            "late": false,
+            "leftEarly": false,
+            "noShow": false,
+            "stayedFull": true,
+            "prepPhase": true,
+            "battlePhase": true
+          },
+          "voice": {
+            "joined": true,
+            "onTime": true,
+            "leftEarly": false,
+            "joinedLate": false
+          },
+          "combat": {
+            "joinedRallies": true,
+            "ledRallies": false,
+            "defendedStructures": false,
+            "followedOrders": true,
+            "wentRogue": false
+          },
+          "notes": "",
+          "performanceTag": "reliable"
+        },
+        {
+          "snapshotId": "demo-s5",
+          "eventId": "demo-e1",
+          "playerId": "demo-p5",
+          "createdAt": "2026-05-10T12:30:00Z",
+          "profileSnapshot": {},
+          "attendance": {
+            "attended": true,
+            "late": false,
+            "leftEarly": false,
+            "noShow": false,
+            "stayedFull": true,
+            "prepPhase": true,
+            "battlePhase": true
+          },
+          "voice": {
+            "joined": false,
+            "onTime": false,
+            "leftEarly": false,
+            "joinedLate": false
+          },
+          "combat": {
+            "joinedRallies": false,
+            "ledRallies": false,
+            "defendedStructures": true,
+            "followedOrders": true,
+            "wentRogue": false
+          },
+          "notes": "Solid garrison.",
+          "performanceTag": "reliable"
+        },
+        {
+          "snapshotId": "demo-s6",
+          "eventId": "demo-e1",
+          "playerId": "demo-p7",
+          "createdAt": "2026-05-10T12:30:00Z",
+          "profileSnapshot": {},
+          "attendance": {
+            "attended": true,
+            "late": false,
+            "leftEarly": false,
+            "noShow": false,
+            "stayedFull": true,
+            "prepPhase": true,
+            "battlePhase": true
+          },
+          "voice": {
+            "joined": true,
+            "onTime": true,
+            "leftEarly": false,
+            "joinedLate": false
+          },
+          "combat": {
+            "joinedRallies": true,
+            "ledRallies": false,
+            "defendedStructures": false,
+            "followedOrders": true,
+            "wentRogue": false
+          },
+          "notes": "",
+          "performanceTag": null
+        },
+        {
+          "snapshotId": "demo-s7",
+          "eventId": "demo-e1",
+          "playerId": "demo-p8",
+          "createdAt": "2026-05-10T12:30:00Z",
+          "profileSnapshot": {},
+          "attendance": {
+            "attended": false,
+            "late": false,
+            "leftEarly": false,
+            "noShow": true,
+            "stayedFull": false,
+            "prepPhase": false,
+            "battlePhase": false
+          },
+          "voice": {
+            "joined": false,
+            "onTime": false,
+            "leftEarly": false,
+            "joinedLate": false
+          },
+          "combat": {
+            "joinedRallies": false,
+            "ledRallies": false,
+            "defendedStructures": false,
+            "followedOrders": null,
+            "wentRogue": false
+          },
+          "notes": "No-show, no warning given.",
+          "performanceTag": "noshow"
+        }
+      ]
+    }
+  ],
+  "prepScores": [
+    {
+      "id": "demo-sc1",
+      "playerId": "demo-p1",
+      "playerName": "Caroline",
+      "allianceTag": "INT",
+      "prepScore": 980000,
+      "targetScore": 1000000,
+      "lastUpdated": "2026-05-09T10:00:00Z",
+      "notes": "",
+      "history": []
+    },
+    {
+      "id": "demo-sc2",
+      "playerId": "demo-p2",
+      "playerName": "Marcus",
+      "allianceTag": "INT",
+      "prepScore": 1000000,
+      "targetScore": 1000000,
+      "lastUpdated": "2026-05-09T10:00:00Z",
+      "notes": "Hit target early.",
+      "history": []
+    },
+    {
+      "id": "demo-sc3",
+      "playerId": "demo-p3",
+      "playerName": "ZhangWei",
+      "allianceTag": "INT",
+      "prepScore": 620000,
+      "targetScore": 1000000,
+      "lastUpdated": "2026-05-09T10:00:00Z",
+      "notes": "",
+      "history": []
+    },
+    {
+      "id": "demo-sc4",
+      "playerId": "demo-p4",
+      "playerName": "Kira",
+      "allianceTag": "INT",
+      "prepScore": 870000,
+      "targetScore": 1000000,
+      "lastUpdated": "2026-05-09T10:00:00Z",
+      "notes": "",
+      "history": []
+    },
+    {
+      "id": "demo-sc5",
+      "playerId": "demo-p5",
+      "playerName": "RamiAl",
+      "allianceTag": "INT",
+      "prepScore": 450000,
+      "targetScore": 1000000,
+      "lastUpdated": "2026-05-09T10:00:00Z",
+      "notes": "Needs to speed up.",
+      "history": []
+    },
+    {
+      "id": "demo-sc6",
+      "playerId": "demo-p7",
+      "playerName": "TamaraBR",
+      "allianceTag": "INT",
+      "prepScore": 750000,
+      "targetScore": 1000000,
+      "lastUpdated": "2026-05-09T10:00:00Z",
+      "notes": "",
+      "history": []
+    },
+    {
+      "id": "demo-sc7",
+      "playerId": "demo-p8",
+      "playerName": "OkonkwoJ",
+      "allianceTag": "INT",
+      "prepScore": 310000,
+      "targetScore": 1000000,
+      "lastUpdated": "2026-05-09T10:00:00Z",
+      "notes": "Very behind.",
+      "history": []
+    }
+  ],
+  "svsPlans": [
+    {
+      "id": "demo-plan1",
+      "name": "Castle Defence \u2014 Week 1",
+      "strategy": "Defensive Hold",
+      "allianceTag": "INT",
+      "date": "2026-05-10",
+      "status": "completed",
+      "notes": "Hold Sunfire Castle from 12:00 to 12:30. Caroline leads first rally, Marcus leads counter.",
+      "postBattleNotes": "Successfully held. Counter rally landed 4s after enemy impact. Good sync.",
+      "targetImpactTime": "12:05:00",
+      "rallies": [
+        {
+          "id": "demo-r1",
+          "label": "Rally 1 \u2014 Caroline",
+          "leadPlayerId": "demo-p1",
+          "leadName": "Caroline",
+          "allianceTag": "INT",
+          "launchTime": "12:04:20",
+          "marchDuration": 40,
+          "impactTime": "12:05:00",
+          "isStrong": true,
+          "isCounter": false,
+          "isDecoy": false,
+          "order": 1,
+          "notes": "",
+          "status": "launched"
+        },
+        {
+          "id": "demo-r2",
+          "label": "Rally 2 \u2014 Marcus",
+          "leadPlayerId": "demo-p2",
+          "leadName": "Marcus",
+          "allianceTag": "INT",
+          "launchTime": "12:04:25",
+          "marchDuration": 35,
+          "impactTime": "12:05:00",
+          "isStrong": true,
+          "isCounter": false,
+          "isDecoy": false,
+          "order": 2,
+          "notes": "",
+          "status": "launched"
+        }
+      ],
+      "reinforcements": [
+        {
+          "id": "demo-rf1",
+          "playerId": "demo-p5",
+          "playerName": "RamiAl",
+          "allianceTag": "INT",
+          "targetArrivalTime": "12:05:00",
+          "marchDuration": 30,
+          "sendTime": "12:04:30",
+          "arrivalWindow": 5,
+          "status": "sent",
+          "notes": "Garrison reinforcement."
+        }
+      ],
+      "assignments": [],
+      "timelineEvents": [],
+      "marchDb": [],
+      "isTemplate": false,
+      "templateName": "",
+      "createdAt": "2026-05-09T08:00:00Z"
+    }
+  ]
 }

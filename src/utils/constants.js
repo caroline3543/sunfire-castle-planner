@@ -84,7 +84,7 @@ export const COUNTRIES = [
 ];
 
 export const HEROES_BY_GEN = [
-  { gen:'Gen 1',  heroes:['Jessie','Jasser','Jeronimo','Seo-Yoon','Patrick','Bahiti','Ling Xue','Lumak Bokan'] },
+  { gen:'Gen 1',  heroes:['Jessie','Jasser','Jeronimo','Seo-Yoon','Patrick','Bahiti','Ling Xue','Lumak Bokan','Sergey'] },
   { gen:'Gen 2',  heroes:['Philly','Alonso'] },
   { gen:'Gen 3',  heroes:['Mia','Logan','Greg'] },
   { gen:'Gen 4',  heroes:['Reina','Ahmose','Lynn'] },

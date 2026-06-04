@@ -265,6 +265,19 @@ export function BattleTab({ plans, players, events, onSave, onDelete, showToast 
     showToast('Plan deleted');
   }
 
+  function duplicatePlan(plan) {
+    const copy = {
+      ...plan,
+      id: Math.random().toString(36).slice(2)+Date.now().toString(36),
+      name: `${plan.name||plan.strategy} (copy)`,
+      status: 'draft',
+      createdAt: new Date().toISOString(),
+    };
+    onSave([...plans, copy]);
+    showToast('Plan duplicated ✓');
+    vibe(8);
+  }
+
   if (activePlan) {
     return <PlanDetail plan={activePlan} players={players} onUpdate={updatePlan} onBack={()=>setActivePlanId(null)}/>;
   }
@@ -274,14 +287,17 @@ export function BattleTab({ plans, players, events, onSave, onDelete, showToast 
   return (
     <div style={{ padding:'16px 20px 0' }}>
       <button onClick={()=>setCreateOpen(true)} style={{ width:'100%', height:52, borderRadius:12, background:C.gold, color:C.bg, fontWeight:700, fontSize:15, border:'none', cursor:'pointer', marginBottom:20 }}>
-        ＋ New Battle Plan
+        ＋ New Plan
       </button>
 
       {plans.length===0&&(
-        <div style={{ textAlign:'center', padding:'60px 20px' }}>
+        <div style={{ textAlign:'center', padding:'40px 20px' }}>
           <div style={{ fontSize:52, marginBottom:16 }}>⚔️</div>
-          <div style={{ fontSize:18, fontWeight:700, color:C.white, marginBottom:8 }}>No battle plans yet</div>
-          <div style={{ fontSize:15, color:C.muted }}>Create a plan to coordinate rallies, reinforcements, and team assignments.</div>
+          <div style={{ fontSize:18, fontWeight:700, color:C.white, marginBottom:8 }}>No plans yet</div>
+          <div style={{ fontSize:15, color:C.muted, marginBottom:24 }}>Create a plan to coordinate rallies, reinforcements, and team assignments.</div>
+          <button onClick={()=>setCreateOpen(true)} style={{ height:52, padding:'0 32px', borderRadius:12, background:C.gold, color:C.bg, fontWeight:700, fontSize:15, border:'none', cursor:'pointer' }}>
+            ＋ Create your first plan
+          </button>
         </div>
       )}
 
@@ -296,7 +312,10 @@ export function BattleTab({ plans, players, events, onSave, onDelete, showToast 
               <span style={{ fontSize:11, fontWeight:700, color:statusColor(plan.status), padding:'2px 8px', borderRadius:10, background:statusColor(plan.status)+'18', border:`1px solid ${statusColor(plan.status)}33` }}>
                 {plan.status==='live'?'🔴 Live':plan.status==='completed'?'✓ Done':'Draft'}
               </span>
-              <button onClick={e=>{e.stopPropagation();deletePlan(plan.id);}} style={{ fontSize:11, color:C.red+'88', background:'none', border:'none', cursor:'pointer', padding:'2px 0' }}>Delete</button>
+              <div style={{ display:'flex', gap:10 }}>
+                <button onClick={e=>{e.stopPropagation();duplicatePlan(plan);}} style={{ fontSize:11, color:C.icy, background:'none', border:'none', cursor:'pointer', padding:'2px 0' }}>Duplicate</button>
+                <button onClick={e=>{e.stopPropagation();deletePlan(plan.id);}} style={{ fontSize:11, color:C.red+'88', background:'none', border:'none', cursor:'pointer', padding:'2px 0' }}>Delete</button>
+              </div>
             </div>
           </div>
           <div style={{ display:'flex', gap:10, fontSize:12, color:C.muted }}>

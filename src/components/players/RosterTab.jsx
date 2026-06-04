@@ -50,6 +50,28 @@ export function RosterTab({ players, events, onSavePlayer, onAddPlayers, onUpdat
 
       {rosterView==='list' && (
         <>
+          {/* Ready for SvS summary bar — only show when there are players */}
+          {players.length>0&&(()=>{
+            const avail    = players.filter(p=>p.availability?.present==='available').length;
+            const onDisc   = players.filter(p=>p.availability?.discord==='yes').length;
+            const unknown  = players.filter(p=>!p.availability||p.availability.present==='available'&&p.availability.discord==='unknown').length;
+            return (
+              <div style={{ background:C.section, borderRadius:12, padding:'12px 16px', marginBottom:12, display:'flex', gap:0 }}>
+                <div style={{ flex:1, textAlign:'center', borderRight:`1px solid ${C.border}` }}>
+                  <div style={{ fontSize:20, fontWeight:700, color:C.green }}>{avail}</div>
+                  <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>Available</div>
+                </div>
+                <div style={{ flex:1, textAlign:'center', borderRight:`1px solid ${C.border}` }}>
+                  <div style={{ fontSize:20, fontWeight:700, color:C.icy }}>{onDisc}</div>
+                  <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>On Discord</div>
+                </div>
+                <div style={{ flex:1, textAlign:'center' }}>
+                  <div style={{ fontSize:20, fontWeight:700, color:unknown>0?C.gold:C.muted }}>{unknown}</div>
+                  <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>Unconfirmed</div>
+                </div>
+              </div>
+            );
+          })()}
           <div style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:10, marginBottom:4 }}>
             {['All',...ROLES].map(r => (
               <button key={r} onClick={() => setFilterRole(r)} style={{ padding:'7px 14px', borderRadius:20, whiteSpace:'nowrap', background:filterRole===r?C.gold+'22':C.section, border:`1px solid ${filterRole===r?C.gold:C.border}`, color:filterRole===r?C.gold:C.muted, fontWeight:600, fontSize:13, cursor:'pointer', minHeight:36 }}>{r}</button>
@@ -101,7 +123,7 @@ export function RosterTab({ players, events, onSavePlayer, onAddPlayers, onUpdat
                     <div>
                       <div style={{ fontWeight:700, color:C.white, fontSize:15 }}>{m.username||m.alias||'?'}</div>
                       <div style={{ fontSize:12, color:C.icy }}>
-                        {[m.furnaceLevel&&`FC${m.furnaceLevel}`, m.allianceTag&&`[${m.allianceTag}]`].filter(Boolean).join(' · ')}
+                        {[m.furnaceLevel&&`${m.furnaceLevel}`, m.allianceTag&&`[${m.allianceTag}]`].filter(Boolean).join(' · ')}
                         {m.availability?.timing==='late'?' · 🕐':''}
                         {m.availability?.discord==='yes'?' · 🎙️':''}
                       </div>

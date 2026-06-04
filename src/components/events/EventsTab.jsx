@@ -250,7 +250,47 @@ export function EventsTab({ events, players, onCreateEvent, onUpdateEvent, onDel
                 </button>
               </div>
             </div>
-            {(() => { const s=evSum(activeEvent); return s.total>0 ? <div style={{ display:'flex', gap:12 }}><span style={{ fontSize:13, color:C.green }}>✓ {s.attended}</span><span style={{ fontSize:13, color:C.red }}>✗ {s.noShow}</span><span style={{ fontSize:13, color:C.icy }}>🎙️ {s.voice}</span></div> : <div style={{ fontSize:13, color:C.muted }}>Tap a player to record their attendance</div>; })()}
+            {(() => {
+              const s = evSum(activeEvent);
+              return s.total>0 ? (
+                <div>
+                  <div style={{ display:'flex', gap:12 }}>
+                    <span style={{ fontSize:13, color:C.green }}>✓ {s.attended}</span>
+                    <span style={{ fontSize:13, color:C.red }}>✗ {s.noShow}</span>
+                    <span style={{ fontSize:13, color:C.icy }}>🎙️ {s.voice}</span>
+                  </div>
+                  {activeEvent.status==='completed'&&(
+                    <div style={{ marginTop:12, background:C.bg, borderRadius:10, padding:12 }}>
+                      <div style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>Final Summary</div>
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:6, marginBottom:10 }}>
+                        {[
+                          [`${s.attended}/${s.total}`, 'Showed up',  C.green],
+                          [`${s.noShow}`,              'No-shows',   s.noShow>0?C.red:C.muted],
+                          [`${s.voice}`,               'On Discord', C.icy],
+                          [`${Math.round((s.attended/Math.max(s.total,1))*100)}%`, 'Attendance', s.attended/Math.max(s.total,1)>=0.8?C.green:C.gold],
+                        ].map(([v,l,c])=>(
+                          <div key={l} style={{ textAlign:'center' }}>
+                            <div style={{ fontSize:16, fontWeight:700, color:c }}>{v}</div>
+                            <div style={{ fontSize:10, color:C.muted, marginTop:2 }}>{l}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {(()=>{
+                        const rogues = (activeEvent.snapshots||[]).filter(s=>s.combat?.wentRogue);
+                        const stars  = (activeEvent.snapshots||[]).filter(s=>s.performanceTag==='strong');
+                        const eventPlayerMap = Object.fromEntries(eventPlayers.map(p=>[p.id,p]));
+                        return (
+                          <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                            {stars.length>0&&<div style={{ fontSize:12, color:C.gold }}>⭐ Strong: {stars.map(s=>eventPlayerMap[s.playerId]?.username||'?').join(', ')}</div>}
+                            {rogues.length>0&&<div style={{ fontSize:12, color:C.red }}>⚠️ Ignored orders: {rogues.map(s=>eventPlayerMap[s.playerId]?.username||'?').join(', ')}</div>}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              ) : <div style={{ fontSize:13, color:C.muted }}>Tap a player to record their attendance</div>;
+            })()}
           </div>
           <div style={{ display:'flex', gap:8, marginBottom:16, overflowX:'auto' }}>
             <button onClick={() => { setBulkMode(!bulkMode); setBulkSel(new Set()); }} style={{ height:36, padding:'0 14px', borderRadius:20, background:bulkMode?C.gold+'22':C.section, border:`1px solid ${bulkMode?C.gold:C.border}`, color:bulkMode?C.gold:C.muted, fontWeight:600, fontSize:13, cursor:'pointer', whiteSpace:'nowrap' }}>

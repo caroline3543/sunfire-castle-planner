@@ -5,7 +5,7 @@
  */
 
 export const JOINER_HEROES = [
-  'Jessie','Jasser','Jeronimo','Seo-Yoon','Patrick',
+  'Jessie','Jasser','Jeronimo','Seo-Yoon','Patrick','Sergey',
   'Philly','Alonso',
   'Mia','Logan','Greg',
   'Reina','Ahmose','Lynn',
