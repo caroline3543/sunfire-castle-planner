@@ -68,14 +68,11 @@ export function fmtMarch(totalSecs) {
   if (totalSecs == null || isNaN(totalSecs)) return '';
   const m = Math.floor(totalSecs / 60);
   const s = totalSecs % 60;
-  return `${m}m ${String(s).padStart(2, '0')}s`;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
 export function fmtMarchCompact(totalSecs) {
-  if (totalSecs == null || isNaN(totalSecs)) return '';
-  const m = Math.floor(totalSecs / 60);
-  const s = totalSecs % 60;
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return fmtMarch(totalSecs);
 }
 
 // ── Impact time parser ─────────────────────────────────────────
