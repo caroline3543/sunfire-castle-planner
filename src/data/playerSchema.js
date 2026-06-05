@@ -104,21 +104,17 @@ export function newSvsPlan(overrides = {}) {
   };
 }
 
-// A rally slot is one rally leader + their joiner assignments
 export function newRallySlot(overrides = {}) {
   return {
     id:           uid(),
-    type:         'Main Rally',   // rally type
-    leaderId:     null,           // player id
+    type:         'Main Rally',
+    leaderId:     null,
     leaderName:   '',
-    rallyDuration: 3,             // minutes: 1, 3, or 5
-    ratio:        '60/40/0',      // troop ratio preset
-    joiners:      [               // 4 priority joiner slots
-      newJoinerSlot(),
-      newJoinerSlot(),
-      newJoinerSlot(),
-      newJoinerSlot(),
-    ],
+    rallyDuration: 3,
+    ratio:        '60/40/0',
+    troopReqs:    { infantry:null, lancer:null, marksman:null }, // min FC level per troop
+    requestedHeroes: [],   // suggested joiner heroes from meta
+    joiners:      [newJoinerSlot(), newJoinerSlot(), newJoinerSlot(), newJoinerSlot()],
     notes:        '',
     ...overrides,
   };

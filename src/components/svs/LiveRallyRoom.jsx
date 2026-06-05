@@ -18,14 +18,15 @@ const RALLY_DURATIONS = [1,3,5];
 const RATIO_PRESETS = ['60/40/0','50/20/30','48/4/48','40/60/0','60/0/40','0/40/60','50/50/0'];
 
 const DEFAULT_MSG =
-`RALLY COORDINATION
-
-Type: {type}
+`{type} — {name}
 Impact: {impact} UTC
-Send at: {send} UTC
+Open rally at: {open} UTC
 
-Join now. Do not solo.
-Wait for the countdown.`;
+Priority joiners:
+{joiners}
+
+Ratio: {ratio}
+Join now. Do not solo.`;
 
 // ── Helpers ────────────────────────────────────────────────────
 function uid() { return Math.random().toString(36).slice(2)+Date.now().toString(36); }
@@ -56,44 +57,37 @@ function fmtSend(secs) {
   return s===0?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`:`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
-// ── Stage system — 6 stages ────────────────────────────────────
-// secsToOpen = seconds until rally open time
-// secsToMarch = seconds until march time
-function getTimerStage(secsToOpen, secsToMarch) {
-  if (secsToMarch == null) return null;
+// ── Stage system — Leader-only phases ─────────────────────────
+// secsToOpen  = seconds until "open rally" time (impactTime - marchSecs - rallyDuration*60)
+// secsToImpact = seconds until rally hits target
+function getTimerStage(secsToOpen, secsToImpact) {
+  if (secsToImpact == null) return null;
 
-  if (secsToMarch <= 0) {
-    return { stage:'fired', label:'SEND NOW', color:'#FF453A', bg:'#FF453A' };
+  // Phase 5: Impact passed
+  if (secsToImpact <= 0) {
+    return { stage:'impact', label:'✓ Impact', color:'#30D158', bg:'#0A2A14' };
   }
-  if (secsToMarch <= 5) {
-    return { stage:'send', label:'Prepare To Send', color:'#FF8C00', bg:'#FF8C00' };
+
+  // Phase 4: Rally is open — counting down to impact
+  if (secsToOpen != null && secsToOpen <= 0) {
+    return { stage:'filling', label:'✓ Rally Open — Joiners Joining', color:'#30D158', bg:'#0A2A14' };
   }
+
+  // No rally duration set — simplified phases only
   if (secsToOpen == null) {
-    // No rally duration — fall back to simple countdown
-    if (secsToMarch <= 10) return { stage:'hover',  label:'Hover March Button', color:'#F5A623', bg:'#F5A623' };
-    if (secsToMarch <= 30) return { stage:'ready',  label:'Get Ready',          color:'#A8C4D8', bg:'#A8C4D8' };
+    if (secsToImpact <= 10) return { stage:'open_now',  label:'⚠ OPEN RALLY NOW',        color:'#FF453A', bg:'#3A0A0A' };
+    if (secsToImpact <= 30) return { stage:'prepare',   label:'Prepare To Open Rally',   color:'#FF8C00', bg:'#2A1500' };
+    if (secsToImpact <= 90) return { stage:'get_ready', label:'Get Ready',               color:'#A8C4D8', bg:'#0A1A2A' };
     return null;
   }
 
-  if (secsToOpen <= 0 && secsToMarch > 0) {
-    // Rally is open — joiners filling
-    const totalWindow = secsToMarch - secsToOpen; // approx rally duration in secs
-    return { stage:'filling', label:'Open Rally Now — Joiners Joining', color:'#30D158', bg:'#30D158' };
-  }
-  if (secsToOpen <= 10)  return { stage:'open_now', label:'Open Rally Now',      color:'#F5A623', bg:'#F5A623' };
-  if (secsToOpen <= 30)  return { stage:'get_ready', label:'Get Ready',          color:'#A8C4D8', bg:'#A8C4D8' };
-  if (secsToOpen <= 120) return { stage:'standby',   label:'Stand By',           color:'#5A7A94', bg:'#5A7A94' };
+  // Phase 3: Open rally now
+  if (secsToOpen <= 0)  return { stage:'open_now',  label:'⚠ OPEN RALLY NOW',        color:'#FF453A', bg:'#3A0A0A' };
+  // Phase 2: Prepare to open
+  if (secsToOpen <= 5)  return { stage:'prepare',   label:'Prepare To Open Rally',   color:'#FF8C00', bg:'#2A1500' };
+  if (secsToOpen <= 30) return { stage:'get_ready', label:'Get Ready',               color:'#A8C4D8', bg:'#0A1A2A' };
+  if (secsToOpen <= 120)return { stage:'standby',   label:'Stand By',                color:'#5A7A94', bg:C.card   };
   return null;
-}
-
-function stageCardBg(stage) {
-  if (!stage) return C.card;
-  if (stage.stage==='fired')    return '#3A0A0A';
-  if (stage.stage==='send')     return '#2A1500';
-  if (stage.stage==='filling')  return '#0A2A14';
-  if (stage.stage==='open_now') return '#2A2000';
-  if (stage.stage==='get_ready')return '#0A1A2A';
-  return C.card;
 }
 
 // ── Persistence ────────────────────────────────────────────────
@@ -198,26 +192,32 @@ function TimerCard({ timer, onEdit, onDelete, onLeaderMode, onUpdateJoiner }) {
 
   const parsed     = parseImpactInput(timer.impactTime);
   const impactSecs = parsed?.totalSecs??null;
-  const marchSecs  = calcSendSecs(impactSecs,timer.marchSecs,0);
-  const openSecs   = timer.rallyDuration ? calcRallyOpenSecs(impactSecs,timer.marchSecs,timer.rallyDuration) : null;
+  const marchSecs  = calcSendSecs(impactSecs,timer.marchSecs,0);        // when rally auto-marches
+  const openSecs   = timer.rallyDuration
+    ? calcRallyOpenSecs(impactSecs,timer.marchSecs,timer.rallyDuration)  // when leader must open
+    : null;
 
-  const secsToOpen  = openSecs  != null ? openSecs  - now : null;
-  const secsToMarch = marchSecs != null ? marchSecs - now : null;
+  const secsToOpen   = openSecs   != null ? openSecs   - now : null;
+  const secsToImpact = impactSecs != null ? impactSecs - now : null;
 
-  const stage    = getTimerStage(secsToOpen, secsToMarch);
-  const isFired  = secsToMarch != null && secsToMarch <= 0;
-  const color    = RALLY_COLORS[timer.type]||C.gold;
-  const cardBg   = stageCardBg(stage);
+  const stage  = getTimerStage(secsToOpen, secsToImpact);
+  const color  = RALLY_COLORS[timer.type]||C.gold;
+  const cardBg = stage?.bg ?? C.card;
 
-  // Progress bar: 0→100 over last 5 min before open time (or march time if no rally duration)
-  const countdownTarget = openSecs ?? marchSecs;
-  const secsToTarget    = countdownTarget != null ? countdownTarget - now : null;
-  const WINDOW = 300;
+  // Progress bar: fills over last 5 min before open (or impact if no rally duration)
+  const progressTarget = openSecs ?? impactSecs;
+  const secsToTarget   = progressTarget != null ? progressTarget - now : null;
+  const WINDOW   = 300;
   const progress = secsToTarget != null ? Math.max(0,Math.min(100,((WINDOW-Math.max(0,secsToTarget))/WINDOW)*100)) : 0;
 
-  // What to show big — countdown to open rally (or march if no rally duration)
-  const bigCountdown = secsToOpen != null ? secsToOpen : secsToMarch;
-  const bigIsFired   = secsToOpen != null ? secsToOpen <= 0 : isFired;
+  // What to count down to — changes per phase
+  // Phase 1–3: count to rally open time
+  // Phase 4+: count to impact
+  const isRallyOpen  = stage?.stage === 'filling' || stage?.stage === 'impact';
+  const bigCountdown = isRallyOpen ? secsToImpact : (secsToOpen ?? secsToImpact);
+  const bigLabel     = isRallyOpen
+    ? (stage?.stage === 'impact' ? '✓ Impact' : 'Impact in')
+    : (openSecs != null ? 'Open rally in' : 'Countdown');
 
   return (
     <div style={{ background:cardBg, borderRadius:14, overflow:'hidden', marginBottom:12, border:`1px solid ${stage?stage.color+'66':C.border}`, boxShadow:stage&&stage.stage!=='standby'?`0 0 16px ${stage.color}33`:'none', transition:'background 600ms ease, border 600ms ease, box-shadow 600ms ease' }}>
@@ -246,38 +246,40 @@ function TimerCard({ timer, onEdit, onDelete, onLeaderMode, onUpdateJoiner }) {
 
         {/* Stage message */}
         {stage&&(
-          <div style={{ background:stage.color+'22', border:`1px solid ${stage.color}55`, borderRadius:8, padding:'7px 14px', marginBottom:10, textAlign:'center' }}>
-            <div style={{ fontSize:stage.stage==='fired'||stage.stage==='filling'?20:14, fontWeight:800, color:stage.color, letterSpacing:stage.stage==='fired'?'0.12em':0 }}>
+          <div style={{ background:stage.color+'22', border:`1px solid ${stage.color}55`, borderRadius:8, padding:'7px 14px', marginBottom:8, textAlign:'center' }}>
+            <div style={{ fontSize:stage.stage==='open_now'?18:14, fontWeight:800, color:stage.color, letterSpacing:stage.stage==='open_now'?'0.04em':0 }}>
               {stage.label}
             </div>
           </div>
         )}
 
-        {/* Big countdown — to open rally */}
+        {/* Big countdown */}
         <div style={{ textAlign:'center', marginBottom:10 }}>
-          <div style={{ fontSize:10, color:C.muted, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>
-            {openSecs!=null && secsToOpen > 0 ? 'Open rally in' : openSecs!=null && secsToOpen <= 0 ? 'March in' : 'Countdown'}
-          </div>
+          <div style={{ fontSize:10, color:C.muted, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>{bigLabel}</div>
           <div style={{ fontSize:48, fontWeight:900, color:stage?stage.color:C.white, fontVariantNumeric:'tabular-nums', lineHeight:1, letterSpacing:'0.02em' }}>
             {bigCountdown!=null?secsToHHMMSS(bigCountdown):'--:--:--'}
           </div>
         </div>
 
-        {/* Time grid */}
+        {/* Time grid — open / marches / impact */}
         <div style={{ display:'grid', gridTemplateColumns:openSecs!=null?'1fr 1fr 1fr':'1fr 1fr', gap:6, marginBottom:timer.joiners?.length>0?10:0 }}>
           {openSecs!=null&&(
             <div style={{ background:C.section, borderRadius:8, padding:'7px 10px', textAlign:'center' }}>
-              <div style={{ fontSize:9, color:C.muted, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:2 }}>Open at</div>
-              <div style={{ fontSize:13, fontWeight:700, color:C.gold, fontVariantNumeric:'tabular-nums' }}>{fmtSend(openSecs)} UTC</div>
+              <div style={{ fontSize:9, color:C.muted, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:2 }}>Open rally</div>
+              <div style={{ fontSize:13, fontWeight:700, color:isRallyOpen?C.green:C.gold, fontVariantNumeric:'tabular-nums' }}>
+                {isRallyOpen?'✓ Opened':fmtSend(openSecs)+' UTC'}
+              </div>
             </div>
           )}
           <div style={{ background:C.section, borderRadius:8, padding:'7px 10px', textAlign:'center' }}>
-            <div style={{ fontSize:9, color:C.muted, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:2 }}>March at</div>
+            <div style={{ fontSize:9, color:C.muted, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:2 }}>Marches at</div>
             <div style={{ fontSize:13, fontWeight:700, color:C.icy, fontVariantNumeric:'tabular-nums' }}>{marchSecs!=null?fmtSend(marchSecs)+' UTC':'—'}</div>
           </div>
           <div style={{ background:C.section, borderRadius:8, padding:'7px 10px', textAlign:'center' }}>
             <div style={{ fontSize:9, color:C.muted, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:2 }}>Impact</div>
-            <div style={{ fontSize:13, fontWeight:700, color:C.gold, fontVariantNumeric:'tabular-nums' }}>{timer.impactTime||'--:--'} UTC</div>
+            <div style={{ fontSize:13, fontWeight:700, color:stage?.stage==='impact'?C.green:C.gold, fontVariantNumeric:'tabular-nums' }}>
+              {stage?.stage==='impact'?'✓ ':''}{timer.impactTime||'--:--'} UTC
+            </div>
           </div>
         </div>
 
@@ -417,18 +419,21 @@ function LeaderMode({ timer, onClose }) {
   const marchSecs=calcSendSecs(impactSecs,timer.marchSecs,0);
   const openSecs=timer.rallyDuration?calcRallyOpenSecs(impactSecs,timer.marchSecs,timer.rallyDuration):null;
   const secsToOpen=openSecs!=null?openSecs-now:null;
-  const secsToMarch=marchSecs!=null?marchSecs-now:null;
-  const stage=getTimerStage(secsToOpen,secsToMarch);
+  const secsToImpact=impactSecs!=null?impactSecs-now:null;
+  const stage=getTimerStage(secsToOpen,secsToImpact);
   const color=RALLY_COLORS[timer.type]||C.gold;
-  const bigCountdown=secsToOpen!=null?secsToOpen:secsToMarch;
+  const isRallyOpen=stage?.stage==='filling'||stage?.stage==='impact';
+  const bigCountdown=isRallyOpen?secsToImpact:(secsToOpen??secsToImpact);
+  const bigLabel=isRallyOpen?(stage?.stage==='impact'?'✓ Impact':'Impact in'):(openSecs!=null?'Open rally in':'Countdown');
 
   useEffect(()=>{
     if(!stage)return;
     if(stage.stage!==lastStageRef.current){
       lastStageRef.current=stage.stage;
-      if(stage.stage==='fired')    vibe([100,50,100,50,200]);
-      else if(stage.stage==='send')vibe([50,30,50]);
-      else vibe(30);
+      if(stage.stage==='open_now') vibe([100,50,100,50,200]);
+      else if(stage.stage==='prepare') vibe([50,30,50]);
+      else if(stage.stage==='filling') vibe([30,20,30]);
+      else vibe(20);
     }
   },[stage?.stage]);
 
@@ -439,16 +444,17 @@ function LeaderMode({ timer, onClose }) {
       <div style={{ fontSize:14, fontWeight:700, color, textTransform:'uppercase', letterSpacing:'0.12em', marginBottom:6 }}>{timer.name||timer.type}</div>
       {timer.ratio&&<div style={{ fontSize:12, color:C.muted, marginBottom:12 }}>Ratio: {timer.ratio}</div>}
 
-      {stage&&<div style={{ fontSize:stage.stage==='fired'||stage.stage==='filling'?26:18, fontWeight:800, color:stage.color, marginBottom:16, textAlign:'center' }}>{stage.label}</div>}
+      {stage&&<div style={{ fontSize:stage.stage==='open_now'?26:18, fontWeight:800, color:stage.color, marginBottom:16, textAlign:'center' }}>{stage.label}</div>}
 
+      <div style={{ fontSize:11, color:C.muted, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>{bigLabel}</div>
       <div style={{ fontSize:80, fontWeight:900, color:stage?stage.color:C.white, fontVariantNumeric:'tabular-nums', letterSpacing:'0.04em', lineHeight:1, marginBottom:20, textAlign:'center' }}>
         {bigCountdown!=null?secsToHHMMSS(bigCountdown):'--:--:--'}
       </div>
 
       <div style={{ display:'flex', gap:20, marginBottom:20 }}>
-        {openSecs!=null&&<div style={{ textAlign:'center' }}><div style={{ fontSize:11, color:C.muted, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>Open at</div><div style={{ fontSize:18, fontWeight:700, color:C.gold }}>{fmtSend(openSecs)} UTC</div></div>}
-        {marchSecs!=null&&<div style={{ textAlign:'center' }}><div style={{ fontSize:11, color:C.muted, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>March at</div><div style={{ fontSize:18, fontWeight:700, color:C.icy }}>{fmtSend(marchSecs)} UTC</div></div>}
-        {timer.impactTime&&<div style={{ textAlign:'center' }}><div style={{ fontSize:11, color:C.muted, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>Impact</div><div style={{ fontSize:18, fontWeight:700, color:C.gold }}>{timer.impactTime} UTC</div></div>}
+        {openSecs!=null&&<div style={{ textAlign:'center' }}><div style={{ fontSize:11, color:C.muted, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>Open rally</div><div style={{ fontSize:18, fontWeight:700, color:isRallyOpen?C.green:C.gold }}>{isRallyOpen?'✓ Opened':fmtSend(openSecs)+' UTC'}</div></div>}
+        {marchSecs!=null&&<div style={{ textAlign:'center' }}><div style={{ fontSize:11, color:C.muted, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>Marches at</div><div style={{ fontSize:18, fontWeight:700, color:C.icy }}>{fmtSend(marchSecs)} UTC</div></div>}
+        {timer.impactTime&&<div style={{ textAlign:'center' }}><div style={{ fontSize:11, color:C.muted, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>Impact</div><div style={{ fontSize:18, fontWeight:700, color:stage?.stage==='impact'?C.green:C.gold }}>{stage?.stage==='impact'?'✓ ':''}{timer.impactTime} UTC</div></div>}
       </div>
 
       {/* Joiners — big for screen share */}
@@ -495,14 +501,24 @@ function Calculator({ calc, onChange, registry, onStartTimers }) {
   function updRow(id,patch){ onChange({...calc,leaders:calc.leaders.map(l=>l.id===id?{...l,...patch}:l)}); }
 
   function copyMsg(leader) {
-    const openS=leader.marchSecs?calcRallyOpenSecs(impactSecs,leader.marchSecs,leader.rallyDuration||3):null;
-    const sendS=calcSendSecs(impactSecs,leader.marchSecs,leader.offset||0);
+    const impS=calc.impactSecs;
+    const openS=leader.marchSecs&&impS?calcRallyOpenSecs(impS,leader.marchSecs,leader.rallyDuration||3):null;
+    const sendS=calcSendSecs(impS,leader.marchSecs,leader.offset||0);
+
+    // Build joiners list from calculator leader's joiner assignments
+    const joinersText=(leader.joiners||[])
+      .filter(j=>j.playerName)
+      .map((j,i)=>`${i+1}. ${j.replacedBy?j.replacedBy.playerName:j.playerName} → ${j.replacedBy?.heroName||j.heroName||'TBD'}`)
+      .join('\n') || 'Not yet assigned';
+
     const text=(calc.messageTemplate||DEFAULT_MSG)
-      .replace('{type}',leader.type||'Rally')
-      .replace('{impact}',calc.impactTimeRaw||'--:--')
-      .replace('{send}',sendS!=null?fmtSend(sendS):'--:--')
-      .replace('{open}',openS!=null?fmtSend(openS):'--:--')
-      .replace('{name}',leader.name||'');
+      .replace('{type}',   leader.type||'Rally')
+      .replace('{name}',   leader.name||'')
+      .replace('{impact}', calc.impactTimeRaw||'--:--')
+      .replace('{open}',   openS!=null?fmtSend(openS):'--:--')
+      .replace('{send}',   sendS!=null?fmtSend(sendS):'--:--')
+      .replace('{joiners}',joinersText)
+      .replace('{ratio}',  leader.ratio||'');
     navigator.clipboard.writeText(text).then(()=>{setCopied(leader.id);setTimeout(()=>setCopied(null),2000);});
     vibe(8);
   }
@@ -659,7 +675,7 @@ function Calculator({ calc, onChange, registry, onStartTimers }) {
       </button>
       {showTemplate&&(
         <div style={{ background:C.section, borderRadius:10, padding:12 }}>
-          <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>Variables: {'{type}'} {'{impact}'} {'{send}'} {'{open}'} {'{name}'}</div>
+          <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>Variables: {'{type}'} {'{name}'} {'{impact}'} {'{open}'} {'{joiners}'} {'{ratio}'}</div>
           <textarea value={calc.messageTemplate||DEFAULT_MSG} onChange={e=>onChange({...calc,messageTemplate:e.target.value})}
             style={{ width:'100%', minHeight:120, background:C.card, border:`1px solid ${C.border}`, borderRadius:8, padding:'10px 12px', fontSize:13, color:C.white, resize:'vertical', boxSizing:'border-box', fontFamily:'monospace' }}/>
           <button onClick={()=>onChange({...calc,messageTemplate:DEFAULT_MSG})} style={{ fontSize:12, color:C.muted, background:'none', border:'none', cursor:'pointer', padding:'4px 0' }}>Reset to default</button>

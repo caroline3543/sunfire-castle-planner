@@ -6,6 +6,59 @@ import { SheetHandle, Field } from '../common/Primitives.jsx';
 import { AlliancePicker } from '../common/AlliancePicker.jsx';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal.jsx';
 import { LiveRallyRoom } from './LiveRallyRoom.jsx';
+import { JOINER_META } from '../../data/joinerMeta.js';
+
+// ── Hero suggestion from meta table ───────────────────────────
+// Given the leader player's heroes, find the best matching meta formation
+function suggestJoinerHeroes(leaderPlayer, slotType) {
+  if (!leaderPlayer) return null;
+
+  const leaderHeroes = (leaderPlayer.joinerHeroes||[])
+    .filter(jh => jh.skillLevel >= 5)
+    .map(jh => jh.hero);
+
+  if (leaderHeroes.length === 0) return null;
+
+  // Determine formation type from slot type
+  const isDefense = slotType?.toLowerCase().includes('garrison') ||
+                    slotType?.toLowerCase().includes('reinforcement') ||
+                    slotType === 'Counter Rally';
+  const formationType = isDefense ? 'Defense' : 'Offense';
+
+  // Score each meta formation by how many of the leader's heroes appear as leaders
+  let bestFormation = null;
+  let bestScore = -1;
+
+  for (const gen of JOINER_META) {
+    for (const f of gen.formations) {
+      const leaderStr = f.leaders.join(' ').toLowerCase();
+      let score = 0;
+      for (const hero of leaderHeroes) {
+        if (leaderStr.includes(hero.toLowerCase())) score += 2;
+      }
+      // Prefer matching formation type
+      if (f.type.toLowerCase().includes(formationType.toLowerCase())) score += 1;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestFormation = { ...f, gen: gen.gen, genLabel: gen.genLabel };
+      }
+    }
+  }
+
+  if (!bestFormation || bestScore === 0) return null;
+
+  return {
+    formation: bestFormation,
+    suggestedHeroes: [
+      bestFormation.j1, bestFormation.j2,
+      bestFormation.j3, bestFormation.j4,
+    ].filter(Boolean).map(h => h.replace(/\*/g,'').replace(/\*\*/g,'').trim()),
+    alternatives: [bestFormation.alt1, bestFormation.alt2].filter(Boolean),
+    comments: bestFormation.comments || '',
+    genLabel: bestFormation.genLabel,
+  };
+}
 
 // ── Constants ──────────────────────────────────────────────────
 const RALLY_TYPES = ['Main Rally','Counter Rally','Counter-Counter','Switch Fight','Garrison Entry','Reinforcement','Custom'];
@@ -355,6 +408,85 @@ function RallySlotCard({ slot, index, players, totalSlots, onUpdate, onDelete, o
               />
             )}
           </div>
+
+          {/* FC Troop requirements */}
+          <div style={{ marginBottom:14 }}>
+            <label style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:'uppercase', letterSpacing:'0.07em', display:'block', marginBottom:4 }}>Minimum troop tier required</label>
+            <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>Members below these tiers shouldn't join this rally.</div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8 }}>
+              {[['🛡️ Infantry','infantry',C.inf],['⚔️ Lancer','lancer',C.lan],['🏹 Marksman','marksman',C.mar]].map(([label,key,tc])=>(
+                <div key={key}>
+                  <div style={{ fontSize:11, color:tc, fontWeight:700, marginBottom:4 }}>{label}</div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                    {['FC1','FC2','FC3','FC4','FC5'].map(fc=>{
+                      const sel=(slot.troopReqs||{})[key]===fc;
+                      return (
+                        <button key={fc} onClick={()=>upd({troopReqs:{...(slot.troopReqs||{}), [key]:sel?null:fc}})}
+                          style={{ height:32, borderRadius:8, border:`1px solid ${sel?tc:C.border}`, background:sel?tc+'22':C.section, color:sel?tc:C.muted, fontWeight:sel?700:400, fontSize:12, cursor:'pointer' }}>
+                          {fc}+
+                        </button>
+                      );
+                    })}
+                    <button onClick={()=>upd({troopReqs:{...(slot.troopReqs||{}), [key]:null}})}
+                      style={{ height:28, borderRadius:8, border:`1px solid ${C.border}`, background:'none', color:C.muted, fontSize:11, cursor:'pointer' }}>Any</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Hero suggestions from meta table */}
+          {(()=>{
+            const leaderPlayer = players.find(p=>p.id===slot.leaderId);
+            const suggestion   = suggestJoinerHeroes(leaderPlayer, slot.type);
+            return (
+              <div style={{ marginBottom:14 }}>
+                <label style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:'uppercase', letterSpacing:'0.07em', display:'block', marginBottom:4 }}>Requested joiner heroes</label>
+                {suggestion ? (
+                  <div>
+                    <div style={{ background:C.gold+'0a', border:`1px solid ${C.gold}33`, borderRadius:10, padding:12, marginBottom:8 }}>
+                      <div style={{ fontSize:11, color:C.gold, fontWeight:700, marginBottom:4 }}>💡 Suggested from meta — {suggestion.genLabel}</div>
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:6 }}>
+                        {suggestion.suggestedHeroes.map(hero=>{
+                          const requested=(slot.requestedHeroes||[]).includes(hero);
+                          return (
+                            <button key={hero} onClick={()=>{
+                              const curr=slot.requestedHeroes||[];
+                              upd({requestedHeroes:requested?curr.filter(h=>h!==hero):[...curr,hero]});
+                            }} style={{ padding:'5px 12px', borderRadius:14, border:`1px solid ${requested?C.gold:C.border}`, background:requested?C.gold+'22':C.section, color:requested?C.gold:C.icy, fontWeight:600, fontSize:13, cursor:'pointer' }}>
+                              {requested?'✓ ':''}{hero}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {suggestion.alternatives.length>0&&<div style={{ fontSize:11, color:C.muted }}>Alternatives: {suggestion.alternatives.join(', ')}</div>}
+                      {suggestion.comments&&<div style={{ fontSize:11, color:C.muted, marginTop:4, fontStyle:'italic' }}>{suggestion.comments}</div>}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ background:C.section, borderRadius:10, padding:12, marginBottom:8 }}>
+                    <div style={{ fontSize:12, color:C.muted }}>{slot.leaderId ? 'No meta match found for this leader\'s heroes. Add their joiner heroes in 🦸 Joiner Registry.' : 'Assign a leader to see hero suggestions from the meta table.'}</div>
+                  </div>
+                )}
+                {/* Manual override */}
+                <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                  {['Jessie','Seo-Yoon','Jasser','Patrick','Mia','Norah','Philly','Logan','Reina','Sergey','Wu Ming','Gwen','Lynn'].map(hero=>{
+                    const requested=(slot.requestedHeroes||[]).includes(hero);
+                    const inSuggestion=suggestion?.suggestedHeroes.includes(hero);
+                    if(inSuggestion)return null; // already shown above
+                    return (
+                      <button key={hero} onClick={()=>{
+                        const curr=slot.requestedHeroes||[];
+                        upd({requestedHeroes:requested?curr.filter(h=>h!==hero):[...curr,hero]});
+                      }} style={{ padding:'4px 10px', borderRadius:14, border:`1px solid ${requested?C.icy:C.border}`, background:requested?C.icy+'22':C.section, color:requested?C.icy:C.muted, fontWeight:600, fontSize:12, cursor:'pointer' }}>
+                        {requested?'✓ ':''}{hero}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Priority joiners */}
           <div style={{ marginBottom:14 }}>
