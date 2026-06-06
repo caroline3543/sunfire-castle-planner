@@ -10,14 +10,13 @@ import { JOINER_META } from '../../data/joinerMeta.js';
 
 // ── Hero suggestion from meta table ───────────────────────────
 // Given the leader player's heroes, find the best matching meta formation
-function suggestJoinerHeroes(leaderPlayer, slotType) {
-  if (!leaderPlayer) return null;
+function suggestJoinerHeroes(leaderPlayer, slotType, leaderRallyHeroes) {
+  // Use explicitly recorded rally heroes if set, otherwise fall back to player's joiner heroes
+  const heroSource = leaderRallyHeroes?.length > 0
+    ? leaderRallyHeroes
+    : (leaderPlayer?.joinerHeroes||[]).filter(jh=>jh.skillLevel>=5).map(jh=>jh.hero);
 
-  const leaderHeroes = (leaderPlayer.joinerHeroes||[])
-    .filter(jh => jh.skillLevel >= 5)
-    .map(jh => jh.hero);
-
-  if (leaderHeroes.length === 0) return null;
+  if (!heroSource || heroSource.length === 0) return null;
 
   // Determine formation type from slot type
   const isDefense = slotType?.toLowerCase().includes('garrison') ||
@@ -33,7 +32,7 @@ function suggestJoinerHeroes(leaderPlayer, slotType) {
     for (const f of gen.formations) {
       const leaderStr = f.leaders.join(' ').toLowerCase();
       let score = 0;
-      for (const hero of leaderHeroes) {
+      for (const hero of heroSource) {
         if (leaderStr.includes(hero.toLowerCase())) score += 2;
       }
       // Prefer matching formation type
@@ -74,7 +73,7 @@ const RATIO_PRESETS = ['60/40/0','50/20/30','48/4/48','40/60/0','60/0/40','0/40/
 const RALLY_DURATIONS = [1,3,5];
 
 // ── Joiner Slot Row ────────────────────────────────────────────
-function JoinerSlotRow({ slot, index, players, onUpdate, allAssignedIds }) {
+function JoinerSlotRow({ slot, index, players, onUpdate, allAssignedIds, troopReqs = {} }) {
   const [open, setOpen] = useState(false);
 
   const player        = players.find(p => p.id === slot.playerId);
@@ -85,19 +84,41 @@ function JoinerSlotRow({ slot, index, players, onUpdate, allAssignedIds }) {
   const isComplete = !!(slot.playerName && slot.heroName);
   const isUnavail  = slot.confirmed === false && slot.playerId;
 
-  // Replacement suggestions — must have the required hero, not already assigned
+  // FC tier ordering for comparison
+  const FC_ORDER = ['FC1','FC2','FC3','FC4','FC5'];
+  function meetsReqs(player) {
+    const reqs = troopReqs || {};
+    for (const [key, minFC] of Object.entries(reqs)) {
+      if (!minFC) continue;
+      const playerTier = player.troops?.[key];
+      if (!playerTier) return { ok:false, reason:`Needs ${minFC}+ ${key}` };
+      if (FC_ORDER.indexOf(playerTier) < FC_ORDER.indexOf(minFC)) {
+        return { ok:false, reason:`${key} ${playerTier} < ${minFC} required` };
+      }
+    }
+    return { ok:true, reason:null };
+  }
+
+  // Split players into 3 groups:
+  // 1. Eligible with joiner heroes
+  // 2. Eligible without joiner heroes
+  // 3. Below troop requirements (shown greyed with reason)
+  const hasReqs = Object.values(troopReqs||{}).some(Boolean);
+  const eligible   = players.filter(p => !hasReqs || meetsReqs(p).ok);
+  const ineligible = hasReqs ? players.filter(p => !meetsReqs(p).ok) : [];
+
+  const withJoiners    = eligible.filter(p => (p.joinerHeroes||[]).some(jh => jh.skillLevel >= 5));
+  const withoutJoiners = eligible.filter(p => !(p.joinerHeroes||[]).some(jh => jh.skillLevel >= 5));
+
+  // Replacement suggestions — eligible, have the required hero, not already assigned
   const suggestions = isUnavail && slot.heroName
-    ? players
+    ? eligible
         .filter(p => p.id !== slot.playerId)
         .filter(p => !allAssignedIds.has(p.id))
         .filter(p => p.availability?.present !== 'unavailable')
         .filter(p => (p.joinerHeroes||[]).some(jh => jh.hero === slot.heroName && jh.skillLevel >= 5))
         .slice(0, 3)
     : [];
-
-  // Split players: with joiners first, then rest
-  const withJoiners    = players.filter(p => (p.joinerHeroes||[]).some(jh => jh.skillLevel >= 5));
-  const withoutJoiners = players.filter(p => !(p.joinerHeroes||[]).some(jh => jh.skillLevel >= 5));
 
   return (
     <div style={{ background: C.bg, borderRadius: 10, marginBottom: 6, border: `1px solid ${isComplete ? C.green + '33' : C.border + '44'}` }}>
@@ -132,13 +153,19 @@ function JoinerSlotRow({ slot, index, players, onUpdate, allAssignedIds }) {
       {open && (
         <div style={{ padding:'0 12px 12px' }}>
 
-          {/* Player picker — heroes-first ordering */}
+          {/* Player picker */}
           <div style={{ marginBottom:10 }}>
-            <label style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:'uppercase', letterSpacing:'0.07em', display:'block', marginBottom:6 }}>Member</label>
+            <label style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:'uppercase', letterSpacing:'0.07em', display:'block', marginBottom:6 }}>
+              Member
+              {hasReqs && <span style={{ fontSize:10, color:C.gold, fontWeight:400, marginLeft:8 }}>
+                {eligible.length} eligible · {ineligible.length} below troop tier
+              </span>}
+            </label>
             {players.length === 0 ? (
               <div style={{ fontSize:13, color:C.muted, padding:'8px 0' }}>No members in roster</div>
             ) : (
-              <div style={{ maxHeight:140, overflowY:'auto' }}>
+              <div style={{ maxHeight:160, overflowY:'auto' }}>
+                {/* Eligible with heroes */}
                 {withJoiners.length > 0 && (
                   <div style={{ marginBottom:8 }}>
                     <div style={{ fontSize:10, color:C.gold, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:6 }}>Has joiner heroes</div>
@@ -157,8 +184,9 @@ function JoinerSlotRow({ slot, index, players, onUpdate, allAssignedIds }) {
                     </div>
                   </div>
                 )}
+                {/* Eligible without heroes */}
                 {withoutJoiners.length > 0 && (
-                  <div>
+                  <div style={{ marginBottom:8 }}>
                     <div style={{ fontSize:10, color:C.muted, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:6 }}>No heroes recorded</div>
                     <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
                       {withoutJoiners.map(p => {
@@ -172,6 +200,31 @@ function JoinerSlotRow({ slot, index, players, onUpdate, allAssignedIds }) {
                         );
                       })}
                     </div>
+                  </div>
+                )}
+                {/* Ineligible — below troop tier */}
+                {ineligible.length > 0 && (
+                  <div>
+                    <div style={{ fontSize:10, color:C.red, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:6 }}>
+                      ✗ Below troop tier requirement
+                    </div>
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                      {ineligible.map(p => {
+                        const reason = meetsReqs(p).reason;
+                        return (
+                          <div key={p.id} title={reason} style={{ padding:'5px 10px', borderRadius:14, border:`1px solid ${C.red}33`, background:C.red+'0a', color:C.muted, fontSize:12, opacity:0.6, cursor:'not-allowed', display:'flex', alignItems:'center', gap:4 }}>
+                            <span style={{ fontSize:10, color:C.red }}>✗</span>
+                            {p.username||p.alias}
+                            <span style={{ fontSize:10, color:C.red+88 }}>{reason}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {eligible.length === 0 && hasReqs && (
+                  <div style={{ fontSize:13, color:C.red, padding:'8px 0', textAlign:'center' }}>
+                    ⚠ No members meet the troop tier requirements for this rally.
                   </div>
                 )}
               </div>
@@ -234,7 +287,49 @@ function JoinerSlotRow({ slot, index, players, onUpdate, allAssignedIds }) {
 }
 
 // ── Rally Slot Card ────────────────────────────────────────────
-function RallySlotCard({ slot, index, players, totalSlots, onUpdate, onDelete, onMoveUp, onMoveDown, onGoToMembers }) {
+// Hero substitution rules from spreadsheet footnotes
+const HERO_SUBS = {
+  'Jessie*':   ['Jessie','Jasser','Jeronimo'],
+  'Seeyoon':   ['Seo-Yoon','Seeyoon'],
+  'Sergey**':  ['Sergey','Bahiti','Lumak Bokan'],
+  'Patrick':   ['Patrick'],
+  'Mia':       ['Mia'],
+  'Philly':    ['Philly'],
+  'Zinman':    ['Zinman'],
+  'Norah':     ['Norah'],
+  'Reina':     ['Reina'],
+  'Lynn':      ['Lynn'],
+  'Logan':     ['Logan'],
+  'Greg':      ['Greg'],
+  'Flint':     ['Flint'],
+  'Alonso':    ['Alonso'],
+  'Ahmose':    ['Ahmose'],
+  'Hector':    ['Hector'],
+  'Gwen':      ['Gwen'],
+  'Wu Ming':   ['Wu Ming'],
+  'Wayne':     ['Wayne'],
+  'Renee':     ['Renee'],
+};
+
+// Resolve hero name (with footnote) to display name and acceptable alternatives
+function resolveHero(raw) {
+  if (!raw) return null;
+  const clean = raw.replace(/\*/g,'').replace(/\*\*/g,'').trim();
+  const subs  = HERO_SUBS[raw] || HERO_SUBS[clean] || [clean];
+  return { display: subs[0], alternatives: subs.slice(1), raw };
+}
+
+// Check if a player can fill a hero slot (has any acceptable hero)
+function playerCanFillSlot(player, heroRaw) {
+  const resolved = resolveHero(heroRaw);
+  if (!resolved) return false;
+  const allAcceptable = [resolved.display, ...resolved.alternatives];
+  return (player.joinerHeroes||[]).some(jh =>
+    jh.skillLevel >= 5 && allAcceptable.some(h => h.toLowerCase() === jh.hero.toLowerCase())
+  );
+}
+
+function RallySlotCard({ slot, index, players, totalSlots, onUpdate, onDelete, onMoveUp, onMoveDown, onGoToMembers, maxGeneration=6 }) {
   const [open, setOpen]               = useState(index === 0);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -435,55 +530,160 @@ function RallySlotCard({ slot, index, players, totalSlots, onUpdate, onDelete, o
             </div>
           </div>
 
-          {/* Hero suggestions from meta table */}
+          {/* Formation picker — guided by meta table */}
           {(()=>{
-            const leaderPlayer = players.find(p=>p.id===slot.leaderId);
-            const suggestion   = suggestJoinerHeroes(leaderPlayer, slot.type);
+            const isCustom = slot.formationMode === 'custom';
+
+            // Filter formations by generation and offense/defense
+            const availableFormations = JOINER_META
+              .filter(g => g.gen <= maxGeneration)
+              .flatMap(g => g.formations.map(f => ({...f, gen:g.gen, genLabel:g.genLabel})));
+
+            const filtered = slot.formationFilter
+              ? availableFormations.filter(f => f.type.toLowerCase().includes(slot.formationFilter.toLowerCase()))
+              : availableFormations;
+
+            // Coverage check for a formation
+            function getCoverage(f) {
+              const slots = [f.j1, f.j2, f.j3, f.j4].filter(Boolean);
+              return slots.map(heroRaw => {
+                const resolved = resolveHero(heroRaw);
+                const count = players.filter(p => playerCanFillSlot(p, heroRaw)).length;
+                return { heroRaw, display: resolved?.display, alternatives: resolved?.alternatives, count, ok: count >= 1 };
+              });
+            }
+
+            const selectedFormation = slot.selectedFormation
+              ? availableFormations.find(f =>
+                  f.gen === slot.selectedFormation.gen &&
+                  f.leaders.join() === slot.selectedFormation.leaders.join() &&
+                  f.type === slot.selectedFormation.type)
+              : null;
+
             return (
               <div style={{ marginBottom:14 }}>
-                <label style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:'uppercase', letterSpacing:'0.07em', display:'block', marginBottom:4 }}>Requested joiner heroes</label>
-                {suggestion ? (
-                  <div>
-                    <div style={{ background:C.gold+'0a', border:`1px solid ${C.gold}33`, borderRadius:10, padding:12, marginBottom:8 }}>
-                      <div style={{ fontSize:11, color:C.gold, fontWeight:700, marginBottom:4 }}>💡 Suggested from meta — {suggestion.genLabel}</div>
-                      <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:6 }}>
-                        {suggestion.suggestedHeroes.map(hero=>{
-                          const requested=(slot.requestedHeroes||[]).includes(hero);
-                          return (
-                            <button key={hero} onClick={()=>{
-                              const curr=slot.requestedHeroes||[];
-                              upd({requestedHeroes:requested?curr.filter(h=>h!==hero):[...curr,hero]});
-                            }} style={{ padding:'5px 12px', borderRadius:14, border:`1px solid ${requested?C.gold:C.border}`, background:requested?C.gold+'22':C.section, color:requested?C.gold:C.icy, fontWeight:600, fontSize:13, cursor:'pointer' }}>
-                              {requested?'✓ ':''}{hero}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {suggestion.alternatives.length>0&&<div style={{ fontSize:11, color:C.muted }}>Alternatives: {suggestion.alternatives.join(', ')}</div>}
-                      {suggestion.comments&&<div style={{ fontSize:11, color:C.muted, marginTop:4, fontStyle:'italic' }}>{suggestion.comments}</div>}
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ background:C.section, borderRadius:10, padding:12, marginBottom:8 }}>
-                    <div style={{ fontSize:12, color:C.muted }}>{slot.leaderId ? 'No meta match found for this leader\'s heroes. Add their joiner heroes in 🦸 Joiner Registry.' : 'Assign a leader to see hero suggestions from the meta table.'}</div>
-                  </div>
-                )}
-                {/* Manual override */}
-                <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-                  {['Jessie','Seo-Yoon','Jasser','Patrick','Mia','Norah','Philly','Logan','Reina','Sergey','Wu Ming','Gwen','Lynn'].map(hero=>{
-                    const requested=(slot.requestedHeroes||[]).includes(hero);
-                    const inSuggestion=suggestion?.suggestedHeroes.includes(hero);
-                    if(inSuggestion)return null; // already shown above
+                <label style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:'uppercase', letterSpacing:'0.07em', display:'block', marginBottom:4 }}>Formation</label>
+                <div style={{ fontSize:12, color:C.muted, marginBottom:10 }}>
+                  Showing Gen 1–{maxGeneration} formations. Change in ⚙️ Settings.
+                </div>
+
+                {/* Offense / Defense / Custom toggle */}
+                <div style={{ display:'flex', gap:6, marginBottom:12 }}>
+                  {[['All',null,'#A8C4D8'],['⚔️ Offense','offense','#F5A623'],['🛡️ Defense','defense','#6B8CAE'],['🔬 Custom','custom','#30D158']].map(([label, val, c]) => {
+                    const active = val === 'custom' ? isCustom : !isCustom && slot.formationFilter === val;
                     return (
-                      <button key={hero} onClick={()=>{
-                        const curr=slot.requestedHeroes||[];
-                        upd({requestedHeroes:requested?curr.filter(h=>h!==hero):[...curr,hero]});
-                      }} style={{ padding:'4px 10px', borderRadius:14, border:`1px solid ${requested?C.icy:C.border}`, background:requested?C.icy+'22':C.section, color:requested?C.icy:C.muted, fontWeight:600, fontSize:12, cursor:'pointer' }}>
-                        {requested?'✓ ':''}{hero}
+                      <button key={label} onClick={() => {
+                        if (val === 'custom') upd({formationMode:'custom', selectedFormation:null});
+                        else upd({formationMode:'guided', formationFilter:val, selectedFormation:null});
+                      }} style={{ flex:1, height:38, borderRadius:10, border:`1px solid ${active?c:C.border}`, background:active?c+'22':C.section, color:active?c:C.muted, fontWeight:700, fontSize:12, cursor:'pointer' }}>
+                        {label}
                       </button>
                     );
                   })}
                 </div>
+
+                {/* Custom mode */}
+                {isCustom && (
+                  <div style={{ background:C.section, borderRadius:12, padding:14 }}>
+                    <div style={{ fontSize:12, color:C.green, fontWeight:700, marginBottom:10 }}>🔬 Custom formation — enter any heroes and ratio</div>
+                    <div style={{ marginBottom:10 }}>
+                      <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:6 }}>Leader rally heroes</label>
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                        {['Jeronimo','Natalia','Molly','Zinman','Flint','Philly','Alonso','Logan','Mia','Greg','Ahmose','Reina','Lynn','Hector','Norah','Gwen','Wu Ming','Renee','Wayne'].map(hero=>{
+                          const sel=(slot.leaderRallyHeroes||[]).includes(hero);
+                          return (
+                            <button key={hero} onClick={()=>{const c=slot.leaderRallyHeroes||[];upd({leaderRallyHeroes:sel?c.filter(h=>h!==hero):[...c,hero]});}}
+                              style={{ padding:'5px 10px', borderRadius:12, border:`1px solid ${sel?color:C.border}`, background:sel?color+'22':C.card, color:sel?color:C.muted, fontWeight:sel?700:400, fontSize:12, cursor:'pointer' }}>
+                              {sel?'✓ ':''}{hero}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div style={{ marginBottom:10 }}>
+                      <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:6 }}>Requested joiner heroes</label>
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                        {['Jessie','Seo-Yoon','Jasser','Patrick','Mia','Norah','Philly','Logan','Reina','Sergey','Wu Ming','Gwen','Lynn','Zinman'].map(hero=>{
+                          const sel=(slot.requestedHeroes||[]).includes(hero);
+                          return (
+                            <button key={hero} onClick={()=>{const c=slot.requestedHeroes||[];upd({requestedHeroes:sel?c.filter(h=>h!==hero):[...c,hero]});}}
+                              style={{ padding:'5px 10px', borderRadius:12, border:`1px solid ${sel?C.gold:C.border}`, background:sel?C.gold+'22':C.card, color:sel?C.gold:C.muted, fontWeight:sel?700:400, fontSize:12, cursor:'pointer' }}>
+                              {sel?'✓ ':''}{hero}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Guided formation cards */}
+                {!isCustom && (
+                  <div>
+                    {filtered.length === 0 && (
+                      <div style={{ fontSize:13, color:C.muted, textAlign:'center', padding:'20px 0' }}>No formations available for Gen 1–{maxGeneration}. Update generation in ⚙️ Settings.</div>
+                    )}
+                    {filtered.map((f, i) => {
+                      const isSelected = selectedFormation &&
+                        f.gen === selectedFormation.gen &&
+                        f.leaders.join() === selectedFormation.leaders.join() &&
+                        f.type === selectedFormation.type;
+                      const coverage = getCoverage(f);
+                      const allCovered = coverage.every(c => c.ok);
+                      const fColor = f.type.toLowerCase().includes('offense') ? '#F5A623' : '#6B8CAE';
+
+                      return (
+                        <div key={i} onClick={() => {
+                          upd({
+                            selectedFormation: isSelected ? null : {gen:f.gen, leaders:f.leaders, type:f.type},
+                            leaderRallyHeroes: f.leaders,
+                            requestedHeroes: [f.j1,f.j2,f.j3,f.j4].filter(Boolean).map(h=>resolveHero(h)?.display).filter(Boolean),
+                          });
+                        }} style={{ background:isSelected?fColor+'18':C.section, border:`1.5px solid ${isSelected?fColor:C.border}`, borderRadius:12, padding:14, marginBottom:8, cursor:'pointer' }}>
+                          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
+                            <div>
+                              <div style={{ fontSize:12, color:fColor, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:2 }}>
+                                Gen {f.gen} · {f.type}
+                              </div>
+                              <div style={{ fontSize:13, fontWeight:700, color:C.white }}>
+                                {f.leaders.join(' + ')}
+                              </div>
+                              <div style={{ fontSize:11, color:C.muted, marginTop:1 }}>{f.ratio}</div>
+                            </div>
+                            <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
+                              {isSelected && <span style={{ fontSize:11, color:fColor, fontWeight:700 }}>✓ Selected</span>}
+                              <span style={{ fontSize:11, color:allCovered?C.green:C.gold, fontWeight:600 }}>{allCovered?'✓ Full coverage':'⚠ Check coverage'}</span>
+                            </div>
+                          </div>
+
+                          {/* Joiner slots with coverage */}
+                          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6, marginBottom:f.comments?6:0 }}>
+                            {coverage.map((c, ci) => (
+                              <div key={ci} style={{ background:C.card, borderRadius:8, padding:'6px 10px', display:'flex', alignItems:'center', gap:6 }}>
+                                <div style={{ width:6, height:6, borderRadius:'50%', background:c.ok?C.green:C.red, flexShrink:0 }}/>
+                                <div style={{ flex:1, minWidth:0 }}>
+                                  <div style={{ fontSize:12, fontWeight:700, color:C.white }}>{c.display}</div>
+                                  {c.alternatives?.length>0 && <div style={{ fontSize:10, color:C.muted }}>or {c.alternatives.join('/')}</div>}
+                                </div>
+                                <div style={{ fontSize:11, color:c.ok?C.green:C.red, fontWeight:700 }}>×{c.count}</div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {[f.alt1,f.alt2].filter(Boolean).length>0&&(
+                            <div style={{ fontSize:11, color:C.muted, marginTop:6 }}>Alt: {[f.alt1,f.alt2].filter(Boolean).join(' · ')}</div>
+                          )}
+                          {f.comments&&<div style={{ fontSize:11, color:C.gold, marginTop:4, fontStyle:'italic' }}>⚠ {f.comments}</div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+            return (
+              <div style={{ marginBottom:14 }}>
               </div>
             );
           })()}
@@ -501,6 +701,7 @@ function RallySlotCard({ slot, index, players, totalSlots, onUpdate, onDelete, o
                   players={players}
                   onUpdate={patch => updJoiner(i, patch)}
                   allAssignedIds={allAssignedIds}
+                  troopReqs={slot.troopReqs}
                 />
               ))}
             </div>
@@ -566,7 +767,7 @@ function PlanCreateSheet({ open, onClose, onSave, existingTags }) {
 }
 
 // ── Plan Detail ────────────────────────────────────────────────
-function PlanDetail({ plan, players, onUpdate, onBack, onGoLive, onGoToMembers }) {
+function PlanDetail({ plan, players, onUpdate, onBack, onGoLive, onGoToMembers, maxGeneration=6 }) {
   function updPlan(patch) { onUpdate({...plan,...patch}); }
 
   function addSlot() {
@@ -590,7 +791,7 @@ function PlanDetail({ plan, players, onUpdate, onBack, onGoLive, onGoToMembers }
   const readySlots = slots.filter(s=>s.leaderName);
 
   return (
-    <div style={{ padding:'16px 20px 0', paddingBottom:readySlots.length>0?100:0 }}>
+    <div style={{ padding:'16px 20px 0', paddingBottom:readySlots.length>0?120:20 }}>
       {/* Back + breadcrumb */}
       <button onClick={onBack} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', color:C.gold, fontSize:14, fontWeight:600, cursor:'pointer', marginBottom:4, padding:0 }}>
         ← Battle Plans
@@ -641,6 +842,7 @@ function PlanDetail({ plan, players, onUpdate, onBack, onGoLive, onGoToMembers }
           onMoveUp={()=>moveSlot(i,-1)}
           onMoveDown={()=>moveSlot(i,1)}
           onGoToMembers={onGoToMembers}
+          maxGeneration={maxGeneration}
         />
       ))}
 
@@ -652,7 +854,7 @@ function PlanDetail({ plan, players, onUpdate, onBack, onGoLive, onGoToMembers }
 
       {/* Sticky Go Live bar */}
       {readySlots.length > 0 && (
-        <div style={{ position:'fixed', bottom:0, left:'50%', transform:'translateX(-50%)', width:'100%', maxWidth:480, background:C.bg, borderTop:`1px solid ${C.border}`, padding:'12px 20px 20px', boxSizing:'border-box', zIndex:50 }}>
+        <div style={{ position:'fixed', bottom:0, left:'50%', transform:'translateX(-50%)', width:'100%', maxWidth:480, background:C.bg, borderTop:`1px solid ${C.border}`, padding:'12px 20px 28px', boxSizing:'border-box', zIndex:50 }}>
           <button onClick={()=>onGoLive(plan)} style={{ width:'100%', height:56, borderRadius:12, background:C.red, color:'#fff', fontWeight:800, fontSize:17, border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
             🔴 Go Live — {readySlots.length} slot{readySlots.length!==1?'s':''}
             <span style={{ fontSize:13, fontWeight:400, opacity:0.8 }}>
@@ -666,7 +868,7 @@ function PlanDetail({ plan, players, onUpdate, onBack, onGoLive, onGoToMembers }
 }
 
 // ── BattleTab ──────────────────────────────────────────────────
-export function BattleTab({ plans, players, events, onSave, onDelete, showToast, onGoToMembers }) {
+export function BattleTab({ plans, players, events, onSave, onDelete, showToast, onGoToMembers, settings }) {
   const [view, setView]                 = useState('plans');
   const [activePlanId, setActivePlanId] = useState(null);
   const [createOpen, setCreateOpen]     = useState(false);
@@ -706,6 +908,7 @@ export function BattleTab({ plans, players, events, onSave, onDelete, showToast,
         onBack={()=>setActivePlanId(null)}
         onGoLive={handleGoLive}
         onGoToMembers={onGoToMembers}
+        maxGeneration={settings?.maxGeneration || 6}
       />
     );
   }

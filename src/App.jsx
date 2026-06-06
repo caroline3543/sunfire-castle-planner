@@ -78,7 +78,7 @@ export default function App() {
       </div>
 
       {tab===0 && <TabErrorBoundary><RosterTab players={players} events={events} onSavePlayer={savePlayer} onAddPlayers={addPlayers} onUpdatePlayers={updatePlayers} onDeletePlayer={id=>setDeleteTarget(id)} showToast={showToast} onGoToIntel={()=>setTab(3)} /></TabErrorBoundary>}
-      {tab===1 && <TabErrorBoundary><BattleTab plans={svsPlans} players={players} events={events} onSave={saveSvsPlans} onDelete={deleteSvsPlan} showToast={showToast} onGoToMembers={()=>setTab(0)} /></TabErrorBoundary>}
+      {tab===1 && <TabErrorBoundary><BattleTab plans={svsPlans} players={players} events={events} onSave={saveSvsPlans} onDelete={deleteSvsPlan} showToast={showToast} onGoToMembers={()=>setTab(0)} settings={settings} /></TabErrorBoundary>}
       {tab===2 && <TabErrorBoundary><EventsTab events={events} players={players} onCreateEvent={createEvent} onUpdateEvent={updateEvent} onDeleteEvent={deleteEvent} showToast={showToast} /></TabErrorBoundary>}
       {tab===3 && <TabErrorBoundary><IntelTab players={players} events={events} onUpdatePlayer={savePlayer} showToast={showToast} /></TabErrorBoundary>}
       {tab===4 && <TabErrorBoundary><ScoresTab prepScores={prepScores} players={players} onUpdate={updatePrepScores} showToast={showToast} /></TabErrorBoundary>}

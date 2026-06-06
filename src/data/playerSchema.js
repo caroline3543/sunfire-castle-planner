@@ -112,8 +112,9 @@ export function newRallySlot(overrides = {}) {
     leaderName:   '',
     rallyDuration: 3,
     ratio:        '60/40/0',
-    troopReqs:    { infantry:null, lancer:null, marksman:null }, // min FC level per troop
-    requestedHeroes: [],   // suggested joiner heroes from meta
+    troopReqs:    { infantry:null, lancer:null, marksman:null },
+    leaderRallyHeroes: [],  // heroes the rally leader uses to lead (e.g. Jeronimo, Mia, Greg)
+    requestedHeroes: [],
     joiners:      [newJoinerSlot(), newJoinerSlot(), newJoinerSlot(), newJoinerSlot()],
     notes:        '',
     ...overrides,
